@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="UTF-8">
+    <title> Ads Server Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            background: #f4f4f9;
+        }
+
+        h1, h2 {
+            color: #333;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #007bff;
+            color: white;
+        }
+
+        button{
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        button.add {
+            background: #28a745;
+        }
+
+        input, select {
+            padding: 8px;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Quan ly quang cao TV</h1>
+
+    <div class="card">
+        <h2> Tai len tep quang cao anh hoac video</h2>
+        <form action="/upload" method="POST" enctype="multipart/form-data">
+            <input type="file" name="mediaFile" required accept="image/*,video/*"> <br><br>
+            <label>Tieu de: </label><br>
+            <input type="text" name="title"><br><br>
+            <label>Thoi luong hien thi neu la anh (giay): </label> <br>
+            <input type="number" name="duration" value="10" min="1"> <br><br>
+            <button type="submit" class="add">Tai len</button>
+        </form> 
+    </div>
+
+    <div class="card">
+        <h2>Playlist hien tai</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Tieu de</th>
+                    <th>Loai</th>
+                    <th>Thoi luong (s)</th>
+                    <th>Thao tac</th>
+                </tr>
+            </thead>
+            <tbody id="playlistTableBody">
+
+            </tbody>
+            <!-- ${playlist.map(item => `
+                <tr>
+                    <td>${item.id}</td>
+                    <td>${item.title}</td>
+                    <td><b>${item.type.toUpperCase()}</b></td>
+                    <td>${item.duration}</td>
+                    <td><a href="/delete/${item.id}"><button>Xoa</button></a></td>
+                </tr>
+            `).join('')} -->
+        </table>
+    </div>
+
+    <script>
+        async function loadPlaylist() {
+            try {
+                const response = await fetch('/api/playlist');
+                const result = await response.json();
+                if (result.success) {
+                    const tbody = document.getElementById('playlistTableBody');
+                    tbody.innerHTML = '';
+                    result.items.forEach(item => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${item.id}</td>
+                            <td>${item.title || ''}</td>
+                            <td><b>${item.type.toUpperCase()}</b></td>
+                            <td>${item.duration}</td>
+                            <td><a href="/delete/${item.id}"><button>Xoa</button></a></td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }
+            } catch (err) {
+                console.error('Loi tai playlist', err);
+            }
+        }
+
+        //goi khi load trang
+        loadPlaylist();
+    </script>    
+</body>
+</html>

@@ -1,0 +1,11 @@
+<resources>
+
+    <style name="Theme.DigitalSignage" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="windowSplashScreenAnimatedIcon">
+            @drawable/bia
+        </item>
+        <item name="postSplashScreenTheme">
+            @style/Theme.DigitalSignage
+        </item>
+    </style>
+</resources>

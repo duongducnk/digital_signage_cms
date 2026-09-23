@@ -1,0 +1,18 @@
+{
+  "items": [
+    {
+      "id": "1790067761905",
+      "title": "10s",
+      "type": "video",
+      "url": "http://10.0.2.2:3000/media/1790067761863-sample_10s_720p.mp4",
+      "duration": 0
+    },
+    {
+      "id": "1790067967569",
+      "title": "bia",
+      "type": "image",
+      "url": "http://10.0.2.2:3000/media/1790067967562-Bia.jpg",
+      "duration": 10
+    }
+  ]
+}
