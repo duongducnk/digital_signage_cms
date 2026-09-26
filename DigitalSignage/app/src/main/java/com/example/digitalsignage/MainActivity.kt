@@ -1,16 +1,11 @@
 package com.example.digitalsignage
 
-import android.location.GnssAntennaInfo
-import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.size
-import androidx.tv.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -22,21 +17,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.tv.material3.ExperimentalTvMaterial3Api
-import androidx.tv.material3.Surface
-import com.example.digitalsignage.ui.theme.DigitalSignageTheme
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
-import androidx.core.net.toUri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -50,13 +37,21 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
 //        installSplashScreen()
         super.onCreate(savedInstanceState)
+
+        //lay ma dinh danh tv deviceId
+        val deviceId = android.provider.Settings.Secure.getString(
+            contentResolver,
+            android.provider.Settings.Secure.ANDROID_ID
+        ) ?: "default_tv"
+
         setContent {
             Box (
                 modifier = Modifier.fillMaxSize().background(Color.Black),
                 contentAlignment = Alignment.Center
             ) {
                 AdsPlayerScreen(
-                   serverUrl = "http://10.0.2.2:3000/api/playlist"
+                   serverBaseUrl = "http://10.0.2.2:3000",
+                    deviceId = deviceId
                 )
             }
 
@@ -113,46 +108,70 @@ suspend fun fetchPlaylist(urlString: String): List<AdItem> {
 }
 
 @Composable
-fun AdsPlayerScreen(serverUrl: String) { //xu ly chuoi du lieu tu server
+fun AdsPlayerScreen(serverBaseUrl: String, deviceId: String) { //xu ly chuoi du lieu tu server
+    //tao url dong kem theo deviceId
+    val serverUrl = "$serverBaseUrl/api/playlist?deviceId=$deviceId"
+
     var playlist by remember { mutableStateOf<List<AdItem>>(emptyList()) }
-    var pendingPlaylist by remember { mutableStateOf<List<AdItem>>(emptyList()) }
+//    var pendingPlaylist by remember { mutableStateOf<List<AdItem>>(emptyList()) }
     var currentIndex by remember { mutableIntStateOf(0) }
+    var playbackKey by remember { mutableStateOf(0) } //khoa tang dan de buoc lam moi player, timer
     var isLoading by remember { mutableStateOf(true) }
 
-    LaunchedEffect(Unit) { //tai playlist tu server moi 30s
+    LaunchedEffect(Unit) { //tai playlist tu server moi 10s
         while (true) {
             val fetchedList = fetchPlaylist(serverUrl)
-            if (fetchedList.isNotEmpty()) { //luc mo app
-                playlist = fetchedList
-                isLoading = false
-            } else {
-                //neu dang chay quang cao thi luu vao pendingPlaylist
-                pendingPlaylist = fetchedList
-            }
-            delay(10000) // thu lai sau moi 10s
+            if (fetchedList.isNotEmpty()) {
+                if (playlist.isEmpty()) { //luc mo app
+                    playlist = fetchedList
+                    isLoading = false
+                } else {
+                    //neu dang chay quang cao thi luu vao pendingPlaylist
+                    //pendingPlaylist = fetchedList
 
+                    //cap nhat ngay neu danh sach tu server thay doi so voi hien tai
+                    //kiem tra bang cach so sanh kich thuoc hoac phan tu dau tien
+                    if (fetchedList != playlist) {
+                        playlist = fetchedList
+                        //dam bao currentIndex khong bi tran sau khi cap nhat danh sach
+                        if (currentIndex >= playlist.size) {
+                            currentIndex = 0
+                        }
+                    }
+                }
+            } else {
+                //neu server tra ve danh sach rong
+                playlist = emptyList()
+                currentIndex = 0
+            }
+            delay(5000) // thu lai sau moi 5s
         }
     }
-
     //dieu phoi hien thi quang cao khi co du lieu playlist
     if (!isLoading && playlist.isNotEmpty()) {
-        val safeIndex = currentIndex % playlist.size
-        val currentAd = playlist[safeIndex]
+        //dam bao currentIndex khong bao gio vuot qua kich thuoc mang moi, tranh loi khi xoa item
+        if (currentIndex >= playlist.size) {
+            currentIndex = 0
+        }
+
+        val currentAd = playlist[currentIndex]
 
         AdsPlayer(
             adUrl = currentAd.url,
             adType = currentAd.type,
-            duration = currentAd.duration
+            duration = currentAd.duration,
+            playbackKey =  playbackKey //ep lam moi moi khi chay 1 item
         ) {
-            //currentIndex++ //chuyen sang quang cao tiep
+            //tang index dung chia lay du de tu dong lap
+            currentIndex = (currentIndex + 1) % playlist.size //chuyen sang quang cao tiep
+            playbackKey++ //tang key de bao hieu composable chay lai tu
 
-            if (currentIndex >= playlist.size) { //sau khi chay het 1 vong lap
-                if (pendingPlaylist.isNotEmpty()) { //neu co playlist moi
-                    playlist = pendingPlaylist
-                    pendingPlaylist = emptyList()
-                }
-                currentIndex = 0 //quay ve dau vong lap
-            }
+//            if (currentIndex == 0) { //sau khi chay het 1 vong lap day du, cap nhat playlist moi neu co
+//                if (pendingPlaylist.isNotEmpty()) { //neu co playlist moi
+//                    playlist = pendingPlaylist
+//                    pendingPlaylist = emptyList()
+//                }
+//            }
         }
     }
 
@@ -176,25 +195,15 @@ fun AdsPlayerScreen(serverUrl: String) { //xu ly chuoi du lieu tu server
 //            })
 //        }
 //    }
-    //quan ly exoplayer
-//    DisposableEffect(Unit) {
-//        onDispose {
-//            exoPlayer.release()
-//        }
-//    }
-//
-//    AndroidView(
-//        factory = { ctx -> PlayerView(ctx).apply {
-//            player = exoPlayer
-//            useController = false
-//            }
-//        },
-//        modifier = Modifier.fillMaxSize()
-//    )
 }
 
 @Composable
-fun AdsPlayer (adUrl: String, adType: String, duration: Int, onAdsCompleted: () -> Unit) {
+fun AdsPlayer (
+    adUrl: String,
+    adType: String,
+    duration: Int,
+    playbackKey: Int,
+    onAdsCompleted: () -> Unit) {
     val context = LocalContext.current
 
     //khoi tao exoplayer
@@ -203,11 +212,34 @@ fun AdsPlayer (adUrl: String, adType: String, duration: Int, onAdsCompleted: () 
             playWhenReady = true
         }
     }
+
+    //dung launchedEffect rieng cho anh voi khoa playbackKey de anh luon dem nguoc ke ca lap lai
+    if (adType == "image") {
+        LaunchedEffect(playbackKey) {
+            delay(duration * 1000L)
+            onAdsCompleted()
+        }
+    }
+
+//    neu la hinh anh, chuyen sau khoang thoi gian duration
+//    val handler = android.os.Handler(context.mainLooper)
+//    val imageRunnable = Runnable {
+//        if (adType == "image" && !isFinished) {
+//            isFinished = true
+//            onAdsCompleted()
+//        }
+//    }
+//    if (adType == "image") {
+//        handler.postDelayed(imageRunnable, duration * 1000L)
+//    }
+
     //cap nhat mediaItem va xu ly su kien hoan thanh video hoac anh
-    DisposableEffect(adUrl) {
+    // dung playbackKey lam khoa de exoplayer luon load va play lai tu dau moi khi chuyen/lap file
+    DisposableEffect(playbackKey) {
         val mediaItem = MediaItem.fromUri(adUrl)
         exoPlayer.setMediaItem(mediaItem)
         exoPlayer.prepare()
+        exoPlayer.play()
 
         var isFinished = false
 
@@ -219,24 +251,21 @@ fun AdsPlayer (adUrl: String, adType: String, duration: Int, onAdsCompleted: () 
                     onAdsCompleted()
                 }
             }
+
+            //bat loi phat video/anh de khong bi ket man hinh
+            override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
+                super.onPlayerError(error)
+                if (!isFinished) {
+                    isFinished = true
+                    onAdsCompleted() //loi thi tu dong bo qua
+                }
+            }
         }
         exoPlayer.addListener(listener)
 
-        //neu la hinh anh, chuyen sau khoang thoi gian duration
-        val handler = android.os.Handler(context.mainLooper)
-        val imageRunnable = Runnable {
-            if (adType == "image" && !isFinished) {
-                isFinished = true
-                onAdsCompleted()
-            }
-        }
-        if (adType == "image") {
-            handler.postDelayed(imageRunnable, duration * 1000L)
-        }
-
         onDispose {
             exoPlayer.removeListener(listener)
-            handler.removeCallbacks(imageRunnable)
+            exoPlayer.stop() //dung player khi doi item
         }
     }
 
