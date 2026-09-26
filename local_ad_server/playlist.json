@@ -1,18 +1,52 @@
 {
-  "items": [
-    {
-      "id": "1790067761905",
-      "title": "10s",
-      "type": "video",
-      "url": "http://10.0.2.2:3000/media/1790067761863-sample_10s_720p.mp4",
-      "duration": 0
-    },
-    {
-      "id": "1790067967569",
-      "title": "bia",
-      "type": "image",
-      "url": "http://10.0.2.2:3000/media/1790067967562-Bia.jpg",
-      "duration": 10
-    }
-  ]
+  "devices": {
+    "TV_01": [
+      {
+        "id": "1790067761905",
+        "title": "10s",
+        "type": "video",
+        "url": "http://10.0.2.2:3000/media/1790067761863-sample_10s_720p.mp4",
+        "duration": 0
+      },
+      {
+        "id": "1790147098393",
+        "title": "bia",
+        "type": "image",
+        "url": "http://10.0.2.2:3000/media/1790147098384-Bia.jpg",
+        "duration": 10
+      }
+    ],
+    "TV_02": [
+      {
+        "id": "1790067967569",
+        "title": "bia",
+        "type": "image",
+        "url": "http://10.0.2.2:3000/media/1790067967562-Bia.jpg",
+        "duration": 10
+      },
+      {
+        "id": "1790147119858",
+        "title": "15s",
+        "type": "video",
+        "url": "http://10.0.2.2:3000/media/1790147119766-sample_15s_720p.mp4",
+        "duration": 0
+      }
+    ],
+    "13782d46c57ad572": [
+      {
+        "id": "1790397103016-422",
+        "title": "10",
+        "type": "video",
+        "url": "http://10.0.2.2:3000/media/1790397103000-sample_10s_720p.mp4",
+        "duration": 0
+      },
+      {
+        "id": "1790397127470-20",
+        "title": "b",
+        "type": "image",
+        "url": "http://10.0.2.2:3000/media/1790397127467-Bia.jpg",
+        "duration": 10
+      }
+    ]
+  }
 }

@@ -61,8 +61,17 @@
     <h1>Quan ly quang cao TV</h1>
 
     <div class="card">
+        <h2>Chon thiet bi TV</h2>
+        <label>Ma thiet bi: </label>
+        <input type="text" id="currentDeviceId" value="TV_01" onchange="loadPlaylist()">
+        <small style="color: gray;">(Thay doi ma de xem/quan ly playlist cua tv khac)</small>
+    </div>
+
+    <div class="card">
         <h2> Tai len tep quang cao anh hoac video</h2>
         <form action="/upload" method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="deviceId" id="formDeviceId" value="TV_01">
+
             <input type="file" name="mediaFile" required accept="image/*,video/*"> <br><br>
             <label>Tieu de: </label><br>
             <input type="text" name="title"><br><br>
@@ -73,7 +82,10 @@
     </div>
 
     <div class="card">
-        <h2>Playlist hien tai</h2>
+        <h2>
+            Playlist hien tai cua:  
+            <span id="labelDevice" style="color: #007bff;">TV_01</span>
+        </h2>
         <table>
             <thead>
                 <tr>
@@ -85,7 +97,7 @@
                 </tr>
             </thead>
             <tbody id="playlistTableBody">
-
+                <tr><td colspan="5">Dang tai...</td></tr>
             </tbody>
             <!-- ${playlist.map(item => `
                 <tr>
@@ -100,13 +112,45 @@
     </div>
 
     <script>
+        //lay tham so tren url
+        function getQueryParam(param) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(param);
+        }
+
+        //dong bo device id giua input va form upload
+        const inputDeviceId = document.getElementById('currentDeviceId');
+        const formDeviceId = document.getElementById('formDeviceId');
+        const labelDevice = document.getElementById('labelDevice')
+
+        //neu tren url co truyen deviceId sau khi upload/delete tu dong gan vao o input
+        const urlDeviceId = getQueryParam('deviceId');
+        if (urlDeviceId) {
+            inputDeviceId.value = urlDeviceId;
+            formDeviceId.value = urlDeviceId;
+            labelDevice.textContent = urlDeviceId;            
+        }
+
+        inputDeviceId.addEventListener('input', function() {
+            formDeviceId.value = this.value;
+            labelDevice.textContent = this.value;
+            loadPlaylist();
+        });
+
+        //tai playlist theo deviceId hien tai
         async function loadPlaylist() {
+            const deviceId = inputDeviceId.value;
             try {
-                const response = await fetch('/api/playlist');
+                const response = await fetch(`/api/playlist?deviceId=${deviceId}`);
                 const result = await response.json();
-                if (result.success) {
-                    const tbody = document.getElementById('playlistTableBody');
-                    tbody.innerHTML = '';
+
+                const tbody = document.getElementById('playlistTableBody');
+                tbody.innerHTML = '';
+
+                    if (!result.items || result.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="5" style="text_align: center;">Chua co quang cao cho thiet bi </td></tr>'; 
+                        return;
+                    }
                     result.items.forEach(item => {
                         const tr = document.createElement('tr');
                         tr.innerHTML = `
@@ -114,11 +158,11 @@
                             <td>${item.title || ''}</td>
                             <td><b>${item.type.toUpperCase()}</b></td>
                             <td>${item.duration}</td>
-                            <td><a href="/delete/${item.id}"><button>Xoa</button></a></td>
+                            <td><a href="/delete/${deviceId}/${item.id}" onclick="return confirm('Ban co chac muon xoa?')"><button>Xoa</button></a></td>
                         `;
                         tbody.appendChild(tr);
                     });
-                }
+                
             } catch (err) {
                 console.error('Loi tai playlist', err);
             }

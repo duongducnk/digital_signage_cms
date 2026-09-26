@@ -3,8 +3,6 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
-const { version } = require('os');
-const { url } = require('inspector');
 
 const app = express();
 const PORT = 3000;
@@ -33,34 +31,67 @@ app.use(express.urlencoded({ extended: true }));
 
 //doc giu lieu tu file playlist.json
 const playlistFilePath = path.join(__dirname, 'playlist.json');
-function readPlaylist() {
+
+function readAllPlaylist() { //doc toan bo playlist
     try {
         if (fs.existsSync(playlistFilePath)) {
             const data = fs.readFileSync(playlistFilePath, 'utf8');
             const parsed = JSON.parse(data);
-            return parsed.items || []
+
+            if (Array.isArray(parsed.items)) {
+                return { devices: { 'default_tv': parsed.items } };
+            }
+            return parsed;//parsed.devices && parsed.deviceId ? parsed.devices[deviceId] : [];
         }
     } catch (error) {
         console.error("Loi khi doc file playlist.json", error);
     }
-    return []; //tra ve mang rong neu khong co file hoac file loi
+    return { devices: {} }; //tra ve mang rong neu khong co file hoac file loi
+}
+function readPlaylist(deviceId) {
+    if (!deviceId) return [];
+    try  {
+        const parsed = readAllPlaylist();
+        return (parsed.devices && parsed.devices[deviceId]) ? parsed.devices[deviceId] : [];
+    } catch (error) {
+        console.error("Loi khi ghi file playlist.json", error);
+        return [];
+    }
 }
 
+
 //ghi du lieu ra file json
-function savePlaylist(items) {
+function savePlaylist(deviceId, items) {
     try {
-        const data = JSON.stringify({ items: items}, null, 2);
-        fs.writeFileSync(playlistFilePath, data, 'utf8');
-    } catch (error) {
+        let parsed = readAllPlaylist();
+            if (!parsed.devices) {
+                parsed.devices = {};
+            }
+
+            // chuyen cau truc luu json cu sang moi
+            // if (!parsed.devices) {
+            //     parsed = { devices: { default_tv: parsed.items || [] } };
+            // }
+
+            parsed.devices[deviceId] = items;
+            //const data = JSON.stringify({ items: items}, null, 2);
+            fs.writeFileSync(playlistFilePath, JSON.stringify(parsed, null, 2), 'utf8');
+        } catch (error) {
         console.error("Loi khi ghi file playlist.json", error);
     }
 }
 
 //tra ve cau truc json chua link ads
 app.get('/api/playlist', (req, res) => {  //tra ve playlist
-    const playlist = readPlaylist();
+    const deviceId = req.query.deviceId; //lay id tv tu client
+    if (!deviceId) {
+        return res.status(400).json({ success: false, message: "Thieu tham so deviceId"});
+    }
+
+    const playlist = readPlaylist(deviceId);
     res.json({  
         success :true,
+        deviceId: deviceId,
         items: playlist
     });
 });
@@ -97,6 +128,10 @@ app.post('/upload', upload.single('mediaFile'), (req, res) => {
         return res.status(400).send('Khong co file duoc tai len');
     }
 
+    const deviceId = req.body.deviceId;
+    if (!deviceId) {
+        return res.status(400).send('Thieu ma thiet bi (deviceId)');
+    }
     const fileType = req.file.mimetype.startsWith('video') ? 'video' : 'image';
 
     //nhan dien url theo moi truong may ao hoac mang LAN
@@ -106,40 +141,46 @@ app.post('/upload', upload.single('mediaFile'), (req, res) => {
     const fileUrl = `http://10.0.2.2:${PORT}/media/${req.file.filename}`;
 
     const newItem = {
-        id: Date.now().toString(),
+        id: Date.now() + '-' + Math.floor(Math.random() *1000),
         title: req.body.title || req.file.originalname,
         type: fileType,
         url:fileUrl,
         duration: fileType === 'image' ? parseInt(req.body.duration || 10) : 0
     };
 
-    const playlist = readPlaylist();
+    //doc, them, luu vao playlist cua deviceId
+    const playlist = readPlaylist(deviceId);
     playlist.push(newItem);
-    savePlaylist(playlist);
+    savePlaylist(deviceId, playlist);
 
-    res.redirect('/');
+    res.redirect(`/?deviceId=${deviceId}`);
 });
 
 //xoa muc khoi playlist
-app.get('/delete/:id', (req, res) => {
-    const id = req.params.id;
-    let playlist = readPlaylist();
+app.get('/delete/:deviceId/:id', (req, res) => {
+    const { deviceId, id }  = req.params;
+    let playlist = readPlaylist(deviceId);
 
     //tim item trong playlist de lay ten file
     const itemToDelete = playlist.find(item => item.id === id);
     if (itemToDelete) {
-        //trich xuat ten file tu url de xoa trong /media
-        const filename = itemToDelete.url.split('/media/')[1];
-        const filePath = path.join(mediaDir, filename);
-        if (fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath); //xoa file tren o cung
+        try {
+            //trich xuat ten file tu url de xoa trong /media
+            const filename = itemToDelete.url.split('/media/')[1];
+            const filePath = path.join(mediaDir, filename);
+            if (fs.existsSync(filePath)) {
+                fs.unlinkSync(filePath); //xoa file tren o cung
+            }
+        } catch (e) {
+            console.error("Khong the xoa file", e);
         }
+        
     }
     //loc item khoi playlist va luu lai file json
     playlist = playlist.filter(item => item.id !== id);
-    savePlaylist(playlist);
+    savePlaylist(deviceId, playlist);
 
-    res.redirect('/');
+    res.redirect(`/?deviceId=${deviceId}`);
 });
 
 app.listen(PORT, '0.0.0.0', () => {
