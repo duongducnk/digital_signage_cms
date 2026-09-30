@@ -29,6 +29,63 @@ app.use(express.urlencoded({ extended: true }));
 //     }
 // ];
 
+// //luu tru tam cac ma ghep noi
+// let pairingCodes = {};
+
+// //api de tv xin ma ghep noi
+// app.get('/api/generate-pairing-code', (req, res) => {
+//     //tao ngau nhien 4 ky tu viet hoa
+//     const code = Math.random().toString(36).substring(2, 6).toUpperCase();
+
+//     pairingCodes[code] = {
+//         deviceId: `tv_${Date.now()}`,
+//         paired: false,
+//         createAt: Date.now()
+//     };
+
+//     res.json({
+//         success: true,
+//         pairingCodes: code
+//     });
+// });
+
+// //api kiem tra da ghep noi thanh cong
+// app.get('/api/check-pairing/:code', (req, res) => {
+//     const code = req.params.code;
+//     const session = pairingCodes[code];
+
+//     if (!session) {
+//         return res.json ({
+//             success: false,
+//             message: 'Ma khong ton tai hoac da het han'
+//         })
+//     }
+
+//     if (session.paired) {
+//         //neu da duyet, tra ve deviceId chinh thuc cho tv luu
+//         res.json({
+//             success: true,
+//             paired: true,
+//             deviceId: session.deviceId
+//         });
+//     } else {
+//         res.json ({
+//             success: true,
+//             paired: false
+//         });
+//     }
+// });
+
+// //api tren web de admin xac nhan ghep ma voi tv
+// app.post('/api/pair-device', (req, res) => {
+//     const { pairingCode, customDeviceId } = req.body; //customDeviceId do admin dat
+//     if (pairingCodes[pairingCode]) {
+//         //cap nhat deviceid theo y admin
+//         pairingCodes[pairingCode].deviceId = customDeviceId;
+//         pairingCodes[pairingCode].paired = true;
+//     }
+// })
+
 //doc giu lieu tu file playlist.json
 const playlistFilePath = path.join(__dirname, 'playlist.json');
 
@@ -80,6 +137,15 @@ function savePlaylist(deviceId, items) {
         console.error("Loi khi ghi file playlist.json", error);
     }
 }
+
+//tra ve danh sach thiet bi
+app.get('/api/devices', (req, res) => {
+    const parsed = readAllPlaylist();
+    res.json({
+        success: true, 
+        devices: parsed.devices || {}
+    });
+});
 
 //tra ve cau truc json chua link ads
 app.get('/api/playlist', (req, res) => {  //tra ve playlist

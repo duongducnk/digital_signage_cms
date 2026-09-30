@@ -1,11 +1,15 @@
 package com.example.digitalsignage
 
 import android.os.Bundle
+import android.view.KeyEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -17,6 +21,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.modifier.modifierLocalConsumer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.MediaItem
@@ -35,25 +41,53 @@ class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalTvMaterial3Api::class)
 
     override fun onCreate(savedInstanceState: Bundle?) {
-//        installSplashScreen()
         super.onCreate(savedInstanceState)
 
-        //lay ma dinh danh tv deviceId
-        val deviceId = android.provider.Settings.Secure.getString(
-            contentResolver,
-            android.provider.Settings.Secure.ANDROID_ID
-        ) ?: "default_tv"
+//        //lay ma dinh danh tv deviceId
+//        val deviceId = android.provider.Settings.Secure.getString(
+//            contentResolver,
+//            android.provider.Settings.Secure.ANDROID_ID
+//        ) ?: "default_tv"
 
         setContent {
-            Box (
-                modifier = Modifier.fillMaxSize().background(Color.Black),
-                contentAlignment = Alignment.Center
+            var currentDeviceId by remember { mutableStateOf(DevicePreference.getDeviceId(this)) }
+
+            //bien trang thai chuyen qua lai giua man hinh cai dat va man hinh quang cao
+            var isSettingMode by remember { mutableStateOf(false) }
+
+            Surface(
+                modifier = Modifier.fillMaxSize(),
+                color = Color.Black
             ) {
-                AdsPlayerScreen(
-                   serverBaseUrl = "http://10.0.2.2:3000",
-                    deviceId = deviceId
-                )
+                Box (
+                    modifier = Modifier.fillMaxSize().background(Color.Black),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (isSettingMode) {
+                        SettingsScreen { newId ->
+                            currentDeviceId = newId
+                            isSettingMode = false // luu xong thi chuyen ve man hinh phat quang cao
+                        }
+                    } else {
+                        AdsPlayerScreen(
+                            serverBaseUrl = "http://10.0.2.2:3000",
+                            deviceId = currentDeviceId,
+                            onSettingsClick = {
+                                isSettingMode = true //mo lai man hinh cai dat khi can
+                            }
+                        )
+                    }
+                }
             }
+//            Box (
+//                modifier = Modifier.fillMaxSize().background(Color.Black),
+//                contentAlignment = Alignment.Center
+//            ) {
+//                AdsPlayerScreen(
+//                   serverBaseUrl = "http://10.0.2.2:3000",
+//                    deviceId = deviceId
+//                )
+//            }
 
 //            DigitalSignageTheme {
 //                Surface(
@@ -70,7 +104,19 @@ class MainActivity : ComponentActivity() {
 //            }
         }
     }
+
+    //ho tro phim menu tren remote tv de mo bang doi device id
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        if (keyCode == KeyEvent.KEYCODE_MENU || keyCode == KeyEvent.KEYCODE_SETTINGS) {
+            //restart activit hoac chuyen trang thai sang settings
+            recreate() //xu ly state tuong ung
+            return true
+        }
+        return super.onKeyDown(keyCode, event)
+    }
 }
+
+
 
 data class  AdItem(val type: String, val url: String, val duration: Int)
 
@@ -108,17 +154,21 @@ suspend fun fetchPlaylist(urlString: String): List<AdItem> {
 }
 
 @Composable
-fun AdsPlayerScreen(serverBaseUrl: String, deviceId: String) { //xu ly chuoi du lieu tu server
+fun AdsPlayerScreen(
+    serverBaseUrl: String,
+    deviceId: String,
+    onSettingsClick: () -> Unit
+) { //xu ly chuoi du lieu tu server
     //tao url dong kem theo deviceId
     val serverUrl = "$serverBaseUrl/api/playlist?deviceId=$deviceId"
 
     var playlist by remember { mutableStateOf<List<AdItem>>(emptyList()) }
 //    var pendingPlaylist by remember { mutableStateOf<List<AdItem>>(emptyList()) }
     var currentIndex by remember { mutableIntStateOf(0) }
-    var playbackKey by remember { mutableStateOf(0) } //khoa tang dan de buoc lam moi player, timer
+    var playbackKey by remember { mutableIntStateOf(0) } //khoa tang dan de buoc lam moi player, timer
     var isLoading by remember { mutableStateOf(true) }
 
-    LaunchedEffect(Unit) { //tai playlist tu server moi 10s
+    LaunchedEffect(serverUrl) { //tai playlist tu server moi 10s
         while (true) {
             val fetchedList = fetchPlaylist(serverUrl)
             if (fetchedList.isNotEmpty()) {
@@ -147,24 +197,26 @@ fun AdsPlayerScreen(serverBaseUrl: String, deviceId: String) { //xu ly chuoi du 
             delay(5000) // thu lai sau moi 5s
         }
     }
-    //dieu phoi hien thi quang cao khi co du lieu playlist
-    if (!isLoading && playlist.isNotEmpty()) {
-        //dam bao currentIndex khong bao gio vuot qua kich thuoc mang moi, tranh loi khi xoa item
-        if (currentIndex >= playlist.size) {
-            currentIndex = 0
-        }
 
-        val currentAd = playlist[currentIndex]
+    Box(modifier = Modifier.fillMaxSize()) {
+        //dieu phoi hien thi quang cao khi co du lieu playlist
+        if (!isLoading && playlist.isNotEmpty()) {
+            //dam bao currentIndex khong bao gio vuot qua kich thuoc mang moi, tranh loi khi xoa item
+            if (currentIndex >= playlist.size) {
+                currentIndex = 0
+            }
 
-        AdsPlayer(
-            adUrl = currentAd.url,
-            adType = currentAd.type,
-            duration = currentAd.duration,
-            playbackKey =  playbackKey //ep lam moi moi khi chay 1 item
-        ) {
-            //tang index dung chia lay du de tu dong lap
-            currentIndex = (currentIndex + 1) % playlist.size //chuyen sang quang cao tiep
-            playbackKey++ //tang key de bao hieu composable chay lai tu
+            val currentAd = playlist[currentIndex]
+
+            AdsPlayer(
+                adUrl = currentAd.url,
+                adType = currentAd.type,
+                duration = currentAd.duration,
+                playbackKey =  playbackKey //ep lam moi moi khi chay 1 item
+            ) {
+                //tang index dung chia lay du de tu dong lap
+                currentIndex = (currentIndex + 1) % playlist.size //chuyen sang quang cao tiep
+                playbackKey++ //tang key de bao hieu composable chay lai tu
 
 //            if (currentIndex == 0) { //sau khi chay het 1 vong lap day du, cap nhat playlist moi neu co
 //                if (pendingPlaylist.isNotEmpty()) { //neu co playlist moi
@@ -172,8 +224,19 @@ fun AdsPlayerScreen(serverBaseUrl: String, deviceId: String) { //xu ly chuoi du 
 //                    pendingPlaylist = emptyList()
 //                }
 //            }
+            }
         }
+
+        //su dung onSettingsClick tao nut cai dat
+        Button(
+            onClick = onSettingsClick,
+            modifier = Modifier.align(Alignment.TopEnd).padding(16.dp)
+        ) {
+            androidx.tv.material3.Text("Cai dat TV")
+        }
+
     }
+
 
 //    videoUrl: String = "https://www.learningcontainer.com/wp-content/uploads/2020/05/sample-mp4-file.mp4"
 //    val context = LocalContext.current
@@ -235,7 +298,7 @@ fun AdsPlayer (
 
     //cap nhat mediaItem va xu ly su kien hoan thanh video hoac anh
     // dung playbackKey lam khoa de exoplayer luon load va play lai tu dau moi khi chuyen/lap file
-    DisposableEffect(playbackKey) {
+    DisposableEffect(playbackKey, adUrl) {
         val mediaItem = MediaItem.fromUri(adUrl)
         exoPlayer.setMediaItem(mediaItem)
         exoPlayer.prepare()

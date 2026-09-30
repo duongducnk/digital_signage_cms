@@ -13,6 +13,23 @@
             color: #333;
         }
 
+        .container {
+            display: flex;
+            gap: 20px;
+        }
+        .sidebar {
+            flex: 1;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        .main-content {
+            flex: 2;
+        }
+
         .card {
             background: white;
             padding: 20px;
@@ -51,84 +68,129 @@
             background: #28a745;
         }
 
+        button.select {
+            background: #17a2b8;
+            padding: 4px 8px;
+            font-size: 12px;
+        }
+
         input, select {
             padding: 8px;
             margin-right: 10px;
+        }
+
+        .tv-item {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .tv-item:hover {
+            background: #f8f9fa;
         }
     </style>
 </head>
 <body>
     <h1>Quan ly quang cao TV</h1>
 
-    <div class="card">
-        <h2>Chon thiet bi TV</h2>
-        <label>Ma thiet bi: </label>
-        <input type="text" id="currentDeviceId" value="TV_01" onchange="loadPlaylist()">
-        <small style="color: gray;">(Thay doi ma de xem/quan ly playlist cua tv khac)</small>
-    </div>
+    <!-- COT TRAI -->
+    <div class="container">
+        <div class="sidebar">
+            <h2>Danh sach TV</h2>
+            <div id="deviceListContainer">
+                <p style="color: gray;"> Dang tai sanh sach thiet bi...</p>
+            </div>
+        </div>
 
-    <div class="card">
-        <h2> Tai len tep quang cao anh hoac video</h2>
-        <form action="/upload" method="POST" enctype="multipart/form-data">
-            <input type="hidden" name="deviceId" id="formDeviceId" value="TV_01">
+        <!-- COT PHAI -->
+        <div class="main-content">
 
-            <input type="file" name="mediaFile" required accept="image/*,video/*"> <br><br>
-            <label>Tieu de: </label><br>
-            <input type="text" name="title"><br><br>
-            <label>Thoi luong hien thi neu la anh (giay): </label> <br>
-            <input type="number" name="duration" value="10" min="1"> <br><br>
-            <button type="submit" class="add">Tai len</button>
-        </form> 
-    </div>
+            <div class="card">
+                <h2>
+                    Playlist hien tai cua:  
+                    <span id="labelDevice" style="color: #007bff;">TV_01</span>
+                </h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Tieu de</th>
+                            <th>Loai</th>
+                            <th>Thoi luong (s)</th>
+                            <th>Thao tac</th>
+                        </tr>
+                    </thead>
+                    <tbody id="playlistTableBody">
+                        <tr><td colspan="5">Dang tai...</td></tr>
+                    </tbody>
+                        <!-- ${playlist.map(item => `
+                            <tr>
+                                <td>${item.id}</td>
+                                <td>${item.title}</td>
+                                <td><b>${item.type.toUpperCase()}</b></td>
+                                <td>${item.duration}</td>
+                                <td><a href="/delete/${item.id}"><button>Xoa</button></a></td>
+                            </tr>
+                        `).join('')} -->
+                </table>
+            </div>
 
-    <div class="card">
-        <h2>
-            Playlist hien tai cua:  
-            <span id="labelDevice" style="color: #007bff;">TV_01</span>
-        </h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Tieu de</th>
-                    <th>Loai</th>
-                    <th>Thoi luong (s)</th>
-                    <th>Thao tac</th>
-                </tr>
-            </thead>
-            <tbody id="playlistTableBody">
-                <tr><td colspan="5">Dang tai...</td></tr>
-            </tbody>
-            <!-- ${playlist.map(item => `
-                <tr>
-                    <td>${item.id}</td>
-                    <td>${item.title}</td>
-                    <td><b>${item.type.toUpperCase()}</b></td>
-                    <td>${item.duration}</td>
-                    <td><a href="/delete/${item.id}"><button>Xoa</button></a></td>
-                </tr>
-            `).join('')} -->
-        </table>
+            <div class="card">
+                <h2> Tai len tep quang cao anh hoac video</h2>
+                <form action="/upload" method="POST" enctype="multipart/form-data">
+                    <input type="hidden" name="deviceId" id="formDeviceId" value="TV_01">
+
+                    <input type="file" name="mediaFile" required accept="image/*,video/*"> <br><br>
+                    <label>Tieu de: </label><br>
+                    <input type="text" name="title" style="width: 100%;"><br><br>
+                    <label>Thoi luong hien thi neu la anh (giay): </label> <br>
+                    <input type="number" name="duration" value="10" min="1"> <br><br>
+                    <button type="submit" class="add">Tai len</button>
+                </form> 
+            </div>
+
+            <div class="card">
+                <h2>Dang quan ly thiet bi</h2>
+                <label>Ma thiet bi: </label>
+                <input type="text" id="currentDeviceId" value="TV_01">
+                <!-- <small style="color: gray;">(Thay doi ma de xem/quan ly playlist cua tv khac)</small> -->
+                <button class="select" onclick="loadPlaylist()">Tai playlist</button>
+            </div>
+
+        </div>
     </div>
 
     <script>
+
+        //dong bo device id giua input va form upload
+        const inputDeviceId = document.getElementById('currentDeviceId');
+        const formDeviceId = document.getElementById('formDeviceId');
+        const labelDevice = document.getElementById('labelDevice')
+        const deviceListContainer = document.getElementById('deviceListContainer');
+
         //lay tham so tren url
         function getQueryParam(param) {
             const urlParams = new URLSearchParams(window.location.search);
             return urlParams.get(param);
         }
 
-        //dong bo device id giua input va form upload
-        const inputDeviceId = document.getElementById('currentDeviceId');
-        const formDeviceId = document.getElementById('formDeviceId');
-        const labelDevice = document.getElementById('labelDevice')
-
         //neu tren url co truyen deviceId sau khi upload/delete tu dong gan vao o input
         const urlDeviceId = getQueryParam('deviceId');
+        let initialDevice = "tv_01";
         if (urlDeviceId) {
-            inputDeviceId.value = urlDeviceId;
-            formDeviceId.value = urlDeviceId;
-            labelDevice.textContent = urlDeviceId;            
+            initialDevice = urlDeviceId;
+            // formDeviceId.value = urlDeviceId;
+            // labelDevice.textContent = urlDeviceId;            
+        }
+
+        //dong bo gia tri input va load du lieu
+        function setActiveDevice(deviceId) {
+            inputDeviceId.value = deviceId;
+            formDeviceId.value = deviceId;
+            labelDevice.textContent = deviceId;
+            loadPlaylist();
+            loadDeviceList();
         }
 
         inputDeviceId.addEventListener('input', function() {
@@ -137,9 +199,52 @@
             loadPlaylist();
         });
 
+        //tai danh sach TV tu server
+        async function loadDeviceList() {
+            try {
+                const response = await fetch('/api/devices');
+                const result = await response.json();
+
+                if (result.success && result.devices) {
+                    deviceListContainer.innerHTML = '';
+                    const devices = result.devices;
+                    const deviceKeys = Object.keys(devices);
+
+                    if (deviceKeys.length === 0) {
+                        deviceListContainer.innerHTML = '<p style="color: gray;"> Chua co thiet bi ket noi</p>';
+                        return;              
+                    }
+
+                    deviceKeys.forEach(devId => {
+                        const itemsCount = devices[devId].length || 0;
+                        const isCurrent = devId === inputDeviceId.value;
+
+                        const div = document.createElement('div');
+                        div.className = 'tv-item';
+                        if (isCurrent) {
+                            div.style.background = '#e2f0d9';
+                        }
+                        div.innerHTML = `
+                            <div>
+                                <strong>${devId}</strong><br>
+                                <small style="color: gray;">${itemsCount} tep quang cao</small>
+                            </div>
+                            <button class="select" onClick="setActiveDevice('${devId}')">Quan ly</button>
+                        `;
+                        deviceListContainer.appendChild(div);
+                    });
+                }
+            } catch (err) {
+                console.error('Loi tai danh sach thiet bi', err);
+            }
+        }
+
         //tai playlist theo deviceId hien tai
         async function loadPlaylist() {
             const deviceId = inputDeviceId.value;
+            formDeviceId.value = deviceId;
+            labelDevice.textContent = deviceId;
+
             try {
                 const response = await fetch(`/api/playlist?deviceId=${deviceId}`);
                 const result = await response.json();
@@ -166,10 +271,12 @@
             } catch (err) {
                 console.error('Loi tai playlist', err);
             }
+             //goi khi load trang
+            // loadPlaylist();
         }
 
-        //goi khi load trang
-        loadPlaylist();
+        //khoi chay khi load trang
+        setActiveDevice(initialDevice);
     </script>    
 </body>
 </html>
