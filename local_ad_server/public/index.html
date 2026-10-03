@@ -151,11 +151,11 @@
             </div>
 
             <div class="card">
-                <h2>Dang quan ly thiet bi</h2>
-                <label>Ma thiet bi: </label>
-                <input type="text" id="currentDeviceId" value="TV_01">
+                <h2>Them TV moi</h2>
+                <label>Nhap ma TV moi: </label><br><br>
+                <input type="text" id="newDeviceIdInput" placeholder="Vi du: tv_sanh8" style="width: 60%;">
                 <!-- <small style="color: gray;">(Thay doi ma de xem/quan ly playlist cua tv khac)</small> -->
-                <button class="select" onclick="loadPlaylist()">Tai playlist</button>
+                <button class="select" onclick="addNewDevice()">Them TV</button>
             </div>
 
         </div>
@@ -168,6 +168,7 @@
         const formDeviceId = document.getElementById('formDeviceId');
         const labelDevice = document.getElementById('labelDevice')
         const deviceListContainer = document.getElementById('deviceListContainer');
+        const newDeviceIdInput = document.getElementById('newDeviceIdInput');
 
         //lay tham so tren url
         function getQueryParam(param) {
@@ -186,18 +187,43 @@
 
         //dong bo gia tri input va load du lieu
         function setActiveDevice(deviceId) {
-            inputDeviceId.value = deviceId;
+            // inputDeviceId.value = deviceId;
             formDeviceId.value = deviceId;
             labelDevice.textContent = deviceId;
-            loadPlaylist();
+            loadPlaylist(deviceId);
             loadDeviceList();
         }
 
-        inputDeviceId.addEventListener('input', function() {
-            formDeviceId.value = this.value;
-            labelDevice.textContent = this.value;
-            loadPlaylist();
-        });
+        // inputDeviceId.addEventListener('input', function() {
+        //     formDeviceId.value = this.value;
+        //     labelDevice.textContent = this.value;
+        //     loadPlaylist();
+        // });
+
+        //them tv moi vao danh sach
+        async function addNewDevice() {
+            const newId = newDeviceIdInput.value.trim();
+            if (!newId) {
+                alert('Vui long nhap thiet bi moi!');
+                return;
+            }
+
+            try {
+                //goi api tao playlist cho tv moi
+                const response = await fetch(`/api/playlist?deviceId=${newId}`);
+                const result = await response.json();
+
+                if (result.success !== false) {
+                    newDeviceIdInput.value = ''; //xoa o nhap
+                    setActiveDevice(newId); //chuyen samg trang quan ly tv vua tao
+                } else {
+                    alert('Khong the tao thiet bi moi');
+                }
+            } catch (err) {
+                console.error('Loi them thiet bi', err);
+                alert('Co loi xay ra khi them thiet bi');
+            }
+        }
 
         //tai danh sach TV tu server
         async function loadDeviceList() {
@@ -215,9 +241,11 @@
                         return;              
                     }
 
+                    const currentActiveId = formDeviceId.value;
+
                     deviceKeys.forEach(devId => {
                         const itemsCount = devices[devId].length || 0;
-                        const isCurrent = devId === inputDeviceId.value;
+                        const isCurrent = devId === currentActiveId;
 
                         const div = document.createElement('div');
                         div.className = 'tv-item';
@@ -229,7 +257,10 @@
                                 <strong>${devId}</strong><br>
                                 <small style="color: gray;">${itemsCount} tep quang cao</small>
                             </div>
-                            <button class="select" onClick="setActiveDevice('${devId}')">Quan ly</button>
+                            <div>
+                                <button class="select" onClick="setActiveDevice('${devId}')">Quan ly</button>
+                                <button style="background: #dc3545; padding: 4px 8 px; font-size: 12px; margin-left: 5px;" onClick="deleteDevice('${devId}')">Xoa</button>
+                            </div>
                         `;
                         deviceListContainer.appendChild(div);
                     });
@@ -240,10 +271,10 @@
         }
 
         //tai playlist theo deviceId hien tai
-        async function loadPlaylist() {
-            const deviceId = inputDeviceId.value;
-            formDeviceId.value = deviceId;
-            labelDevice.textContent = deviceId;
+        async function loadPlaylist(deviceId) {
+            // const deviceId = inputDeviceId.value;
+            // formDeviceId.value = deviceId;
+            // labelDevice.textContent = deviceId;
 
             try {
                 const response = await fetch(`/api/playlist?deviceId=${deviceId}`);
@@ -252,7 +283,7 @@
                 const tbody = document.getElementById('playlistTableBody');
                 tbody.innerHTML = '';
 
-                    if (!result.items || result.length === 0) {
+                    if (!result.items || result.items.length === 0) {
                         tbody.innerHTML = '<tr><td colspan="5" style="text_align: center;">Chua co quang cao cho thiet bi </td></tr>'; 
                         return;
                     }
@@ -273,6 +304,44 @@
             }
              //goi khi load trang
             // loadPlaylist();
+        }
+
+        //xoa thiet bi tv
+        async function deleteDevice(deviceId) {
+            if (!confirm(`Ban chac chan muon xoa "${deviceId}"? Toan bo playlist cua thiet bi nay se bi mat`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/delete-device/${deviceId}`);
+                const result = await response.json();
+
+                if (result.success) {
+                    //neu thiet bi dang chon bi xoa, tu dong chuyen ve thiet bi dau tien
+                    if ( formDeviceId.value === deviceId) {
+                        const resDevices = await fetch('/api/devices');
+                        const dataDevices = await resDevices.json();
+                        const remainingKeys = Object.keys(dataDevices.devices || {});
+
+                        if (remainingKeys.length > 0) {
+                            // setActiveDevice(remainingKeys[0]);
+                            //neu con thiet bi, chuyen sang thiet bi dau tien
+                            window.location.href = `/?deviceId=${remainingKeys[0]}`;
+                        } else {
+                            //neu het thiet bi, chuyen ve trang chu
+                            // setActiveDevice('tv_01');
+                            window.location.href = '/';
+                        }
+                    } else {
+                        loadDeviceList(); //chi tai lai danh sach ben trai neu xoa thiet bi
+                    }
+                } else {
+                    alert('Khong the xoa thiet bi nay')
+                }
+            } catch (err) {
+                console.error('Loi khi xoa thiet bi', err);
+                alert('Co loi khi xoa thiet bi');
+            }
         }
 
         //khoi chay khi load trang
