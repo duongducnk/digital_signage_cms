@@ -3,6 +3,7 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
+const { json } = require('stream/consumers');
 
 const app = express();
 const PORT = 3000;
@@ -154,7 +155,14 @@ app.get('/api/playlist', (req, res) => {  //tra ve playlist
         return res.status(400).json({ success: false, message: "Thieu tham so deviceId"});
     }
 
-    const playlist = readPlaylist(deviceId);
+    let playlist = readPlaylist(deviceId);
+
+    const parsed = readAllPlaylist(); //neu chua co tv trong he thong, tao tv moi
+    if (!parsed.devices || !parsed.devices[deviceId]) {
+        savePlaylist(deviceId, []);
+        playlist = [];
+    }
+
     res.json({  
         success :true,
         deviceId: deviceId,
@@ -202,9 +210,9 @@ app.post('/upload', upload.single('mediaFile'), (req, res) => {
 
     //nhan dien url theo moi truong may ao hoac mang LAN
     //o day mac dinh cau hinh url tro ve localhost
-    // const host = req.get('host');
-    // const fileUrl = `http://${host}/media/${req.file.filename}`;
-    const fileUrl = `http://10.0.2.2:${PORT}/media/${req.file.filename}`;
+    const host = req.get('host');
+    const fileUrl = `http://${host}/media/${req.file.filename}`;
+    // const fileUrl = `http://10.0.2.2:${PORT}/media/${req.file.filename}`;
 
     const newItem = {
         id: Date.now() + '-' + Math.floor(Math.random() *1000),
@@ -247,6 +255,26 @@ app.get('/delete/:deviceId/:id', (req, res) => {
     savePlaylist(deviceId, playlist);
 
     res.redirect(`/?deviceId=${deviceId}`);
+});
+
+//xoa thiet bi tv
+app.get('/api/delete-device/:deviceId', (req, res) => {
+    const deviceId = req.params.deviceId;
+    let parsed = readAllPlaylist();
+
+    if (parsed.devices && parsed.devices[deviceId]) {
+        //xoa thiet bi khoi object devices
+        delete parsed.devices[deviceId];
+
+        //ghi lai file json
+        try {
+            fs.writeFileSync(playlistFilePath, JSON.stringify(parsed, null, 2), 'utf8');
+        } catch (error) {
+            console.error("Loi khi ghi file sau khi xoa thiet bi", error);
+        }
+    }
+
+    res.json({ success: true });
 });
 
 app.listen(PORT, '0.0.0.0', () => {
