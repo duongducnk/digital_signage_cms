@@ -164,7 +164,7 @@
     <script>
 
         //dong bo device id giua input va form upload
-        const inputDeviceId = document.getElementById('currentDeviceId');
+        //const inputDeviceId = document.getElementById('currentDeviceId');
         const formDeviceId = document.getElementById('formDeviceId');
         const labelDevice = document.getElementById('labelDevice')
         const deviceListContainer = document.getElementById('deviceListContainer');
@@ -277,24 +277,32 @@
             // labelDevice.textContent = deviceId;
 
             try {
-                const response = await fetch(`/api/playlist?deviceId=${deviceId}`);
+                const response = await fetch(`/api/playlist?deviceId=${deviceId}&admin=true`);
                 const result = await response.json();
 
                 const tbody = document.getElementById('playlistTableBody');
                 tbody.innerHTML = '';
 
                     if (!result.items || result.items.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="5" style="text_align: center;">Chua co quang cao cho thiet bi </td></tr>'; 
+                        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Chua co quang cao cho thiet bi </td></tr>'; 
                         return;
                     }
                     result.items.forEach(item => {
+                        const isHidden = item.isHidden === true;
+
                         const tr = document.createElement('tr');
                         tr.innerHTML = `
                             <td>${item.id}</td>
                             <td>${item.title || ''}</td>
                             <td><b>${item.type.toUpperCase()}</b></td>
                             <td>${item.duration}</td>
-                            <td><a href="/delete/${deviceId}/${item.id}" onclick="return confirm('Ban co chac muon xoa?')"><button>Xoa</button></a></td>
+                            <td>
+                                <button class="select" style="background: ${isHidden ? '#6c757d' : '#28a745'};" 
+                                    onclick="toggleAdVisibility('${deviceId}', '${item.id}', ${isHidden})">
+                                    ${isHidden ? 'Đang ẩn' : 'Đang hiện'}
+                                </button>
+                                <a href="/delete/${deviceId}/${item.id}" onclick="return confirm('Ban co chac muon xoa?')"><button>Xoa</button></a>
+                            </td>
                         `;
                         tbody.appendChild(tr);
                     });
@@ -304,6 +312,30 @@
             }
              //goi khi load trang
             // loadPlaylist();
+        }
+
+        //an hien quang cao
+        async function toggleAdVisibility(deviceId, adId, show) {
+            try {
+                const response = await fetch('/api/toggle-ad', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ deviceId, adId, show })
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Tải lại bảng playlist để cập nhật màu sắc và chữ trên nút bấm ngay lập tức
+                    loadPlaylist(deviceId);
+                } else {
+                    alert('Không thể thay đổi trạng thái quảng cáo: ' + (result.message || "Loi khong xac dinh"));
+                }
+            } catch (err) {
+                console.error('Lỗi khi đổi trạng thái ad', err);
+                alert('Có lỗi xảy ra khi kết nối server');
+            }
         }
 
         //xoa thiet bi tv

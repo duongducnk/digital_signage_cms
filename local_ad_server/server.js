@@ -3,7 +3,8 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
-const { json } = require('stream/consumers');
+const os = require('os');
+const bonjour = require('bonjour')();
 
 const app = express();
 const PORT = 3000;
@@ -87,6 +88,20 @@ app.use(express.urlencoded({ extended: true }));
 //     }
 // })
 
+//lay dia chi ip lan cua may tinh server
+function getLocalIpAddress() {
+    const interfaces = os.networkInterfaces();
+    for (const name of Object.keys(interfaces)) {
+        for (const net of interfaces[name]) {
+            //chi ;ay ipv4, khong phai dia chi noi bo localhost
+            if (net.family === 'IPv4' && !net.internal) {
+                return net.address;
+            }
+        }
+    }
+    return 'localhost';
+}
+
 //doc giu lieu tu file playlist.json
 const playlistFilePath = path.join(__dirname, 'playlist.json');
 
@@ -112,7 +127,7 @@ function readPlaylist(deviceId) {
         const parsed = readAllPlaylist();
         return (parsed.devices && parsed.devices[deviceId]) ? parsed.devices[deviceId] : [];
     } catch (error) {
-        console.error("Loi khi ghi file playlist.json", error);
+        console.error("Loi khi doc file playlist.json", error);
         return [];
     }
 }
@@ -151,6 +166,8 @@ app.get('/api/devices', (req, res) => {
 //tra ve cau truc json chua link ads
 app.get('/api/playlist', (req, res) => {  //tra ve playlist
     const deviceId = req.query.deviceId; //lay id tv tu client
+    const forAdmin = req.query.admin === 'true';
+
     if (!deviceId) {
         return res.status(400).json({ success: false, message: "Thieu tham so deviceId"});
     }
@@ -163,10 +180,13 @@ app.get('/api/playlist', (req, res) => {  //tra ve playlist
         playlist = [];
     }
 
+    //neu la admin thi tra ve toan bo playlist, neu la tv thi loc bo item an
+    const finalPlaylist = forAdmin ? playlist : playlist.filter(item => item.isHidden !== true);
+
     res.json({  
         success :true,
         deviceId: deviceId,
-        items: playlist
+        items: finalPlaylist
     });
 });
 
@@ -210,9 +230,11 @@ app.post('/upload', upload.single('mediaFile'), (req, res) => {
 
     //nhan dien url theo moi truong may ao hoac mang LAN
     //o day mac dinh cau hinh url tro ve localhost
-    const host = req.get('host');
-    const fileUrl = `http://${host}/media/${req.file.filename}`;
+    // const host = req.get('host');
+    // const fileUrl = `http://${host}/media/${req.file.filename}`;
     // const fileUrl = `http://10.0.2.2:${PORT}/media/${req.file.filename}`;
+    const serverIp = getLocalIpAddress();
+    const fileUrl = `http://${serverIp}:${PORT}/media/${req.file.filename}`;
 
     const newItem = {
         id: Date.now() + '-' + Math.floor(Math.random() *1000),
@@ -228,6 +250,33 @@ app.post('/upload', upload.single('mediaFile'), (req, res) => {
     savePlaylist(deviceId, playlist);
 
     res.redirect(`/?deviceId=${deviceId}`);
+});
+
+//an hien quang cao
+//api thay doi trang thai an/hien quang cao cho tung thiet bi
+app.post('/api/toggle-ad', (req, res) => {
+    const { deviceId, adId, show } = req.body; // show: true là hiện, false là ẩn
+    if (!deviceId || !adId) {
+        return res.status(400).json({ success: false, message: "Thieu thong tin deviceId hoac adId" });
+    }
+
+    let playlist = readPlaylist(deviceId);
+    let updated = false;
+
+    playlist = playlist.map(item => {
+        if (item.id === adId) {
+            updated = true;
+            return { ...item, isHidden: !show }; // Nếu show = false thì isHidden = true (bị ẩn)
+        }
+        return item;
+    });
+
+    if (updated) {
+        savePlaylist(deviceId, playlist);
+        res.json({ success: true });
+    } else {
+        res.status(404).json({ success: false, message: "Khong tim thay quang cao" });
+    }
 });
 
 //xoa muc khoi playlist
@@ -277,6 +326,19 @@ app.get('/api/delete-device/:deviceId', (req, res) => {
     res.json({ success: true });
 });
 
+
+
+
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server dang chay tai http://localhost:${PORT}`);
+
+    // //quang ba dich vu http de tv trong mang lan tu dong tim thay
+    // bonjour.publish({
+    //     name: 'DigitalSignageServer', //ten dinh danh server trong mang
+    //     type: 'http', //giao thuc
+    //     port: PORT,
+    //     txt: { path: '/api/playlist'}
+    // });
+    // console.log(`mDNS Service published: DigitalSignageServer on port ${PORT}`);
 })
+
