@@ -1,7 +1,9 @@
 package com.example.digitalsignage
 
+import android.os.Build
 import android.os.Bundle
 import android.view.KeyEvent
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
@@ -25,6 +27,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.modifier.modifierLocalConsumer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.tv.material3.ExperimentalTvMaterial3Api
@@ -49,6 +54,29 @@ class MainActivity : ComponentActivity() {
 //            android.provider.Settings.Secure.ANDROID_ID
 //        ) ?: "default_tv"
 
+        //lang nghe khi tv tinh day tu trang thai cho
+        ProcessLifecycleOwner.get().lifecycle.addObserver(object : DefaultLifecycleObserver {
+            override fun onResume(owner: LifecycleOwner) {
+                super.onResume(owner)
+            }
+        })
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+            setShowWhenLocked(true)
+            setTurnScreenOn(true)
+        } else {
+            window.addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
+            or WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+            or WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+
+        val serviceIntent = android.content.Intent(this, AdsForegroundService::class.java)
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            startForegroundService(serviceIntent)
+        } else {
+            startService(serviceIntent)
+        }
+
         setContent {
             var currentDeviceId by remember { mutableStateOf(DevicePreference.getDeviceId(this)) }
 
@@ -70,7 +98,8 @@ class MainActivity : ComponentActivity() {
                         }
                     } else {
                         AdsPlayerScreen(
-                            serverBaseUrl = "http://10.0.2.2:3000",
+                            serverBaseUrl = "http://192.168.11.223:3000",
+                            //serverBaseUrl = "http://192.168.23.113:3000",
                             deviceId = currentDeviceId,
                             onSettingsClick = {
                                 isSettingMode = true //mo lai man hinh cai dat khi can
@@ -340,28 +369,12 @@ fun AdsPlayer (
     //nhung playerview cua media3 vao jetpack compose qua androidview
     AndroidView(
         factory = {
-            ctx -> PlayerView(ctx).apply {
-                player = exoPlayer
-                useController = false //an thanh dieu khieu play pause
-            }
+                ctx -> PlayerView(ctx).apply {
+            player = exoPlayer
+            useController = false //an thanh dieu khieu play pause
+        }
         },
         modifier = Modifier.fillMaxSize()
     )
 
 }
-
-//@Composable
-//fun Greeting(name: String, modifier: Modifier = Modifier) {
-//    Text(
-//        text = "Hello $name!",
-//        modifier = modifier
-//    )
-//}
-//
-//@Preview(showBackground = true)
-//@Composable
-//fun GreetingPreview() {
-//    DigitalSignageTheme {
-//        Greeting("Android")
-//    }
-//}
