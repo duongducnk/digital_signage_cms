@@ -92,14 +92,16 @@
     </style>
 </head>
 <body>
-    <h1>Quan ly quang cao TV</h1>
-
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h1>Quản lý quảng cáo TV (ADMIN)</h1>
+        <button style="background: #6c757d;" onclick="logout()">Đăng xuất</button>
+    </div>
     <!-- COT TRAI -->
     <div class="container">
         <div class="sidebar">
-            <h2>Danh sach TV</h2>
+            <h2>Danh sách TV</h2>
             <div id="deviceListContainer">
-                <p style="color: gray;"> Dang tai sanh sach thiet bi...</p>
+                <p style="color: gray;"> Đang tải danh sách thiết bị...</p>
             </div>
         </div>
 
@@ -108,21 +110,21 @@
 
             <div class="card">
                 <h2>
-                    Playlist hien tai cua:  
+                    Playlist hiện tại của:  
                     <span id="labelDevice" style="color: #007bff;">TV_01</span>
                 </h2>
                 <table>
                     <thead>
                         <tr>
                             <th>ID</th>
-                            <th>Tieu de</th>
-                            <th>Loai</th>
-                            <th>Thoi luong (s)</th>
-                            <th>Thao tac</th>
+                            <th>Tiêu đề</th>
+                            <th>Loại</th>
+                            <th>Thời lượng (s)</th>
+                            <th>Thao tác</th>
                         </tr>
                     </thead>
                     <tbody id="playlistTableBody">
-                        <tr><td colspan="5">Dang tai...</td></tr>
+                        <tr><td colspan="5">Đang tải...</td></tr>
                     </tbody>
                         <!-- ${playlist.map(item => `
                             <tr>
@@ -137,25 +139,25 @@
             </div>
 
             <div class="card">
-                <h2> Tai len tep quang cao anh hoac video</h2>
+                <h2> Tải lên tệp ảnh hoặc video để đặt làm quảng cáo</h2>
                 <form action="/upload" method="POST" enctype="multipart/form-data">
                     <input type="hidden" name="deviceId" id="formDeviceId" value="TV_01">
 
                     <input type="file" name="mediaFile" required accept="image/*,video/*"> <br><br>
-                    <label>Tieu de: </label><br>
+                    <label>Tiêu đề: </label><br>
                     <input type="text" name="title" style="width: 100%;"><br><br>
-                    <label>Thoi luong hien thi neu la anh (giay): </label> <br>
+                    <label>Thời lượng hiển thị nếu là ảnh (giây): </label> <br>
                     <input type="number" name="duration" value="10" min="1"> <br><br>
-                    <button type="submit" class="add">Tai len</button>
+                    <button type="submit" class="add">Tải lên</button>
                 </form> 
             </div>
 
             <div class="card">
-                <h2>Them TV moi</h2>
-                <label>Nhap ma TV moi: </label><br><br>
+                <h2>Thêm TV mới</h2>
+                <label>Nhập mã cho TV mới: </label><br><br>
                 <input type="text" id="newDeviceIdInput" placeholder="Vi du: tv_sanh8" style="width: 60%;">
                 <!-- <small style="color: gray;">(Thay doi ma de xem/quan ly playlist cua tv khac)</small> -->
-                <button class="select" onclick="addNewDevice()">Them TV</button>
+                <button class="select" onclick="addNewDevice()">Thêm TV</button>
             </div>
 
         </div>
@@ -174,6 +176,25 @@
         function getQueryParam(param) {
             const urlParams = new URLSearchParams(window.location.search);
             return urlParams.get(param);
+        }
+
+        //kiem tra quyen admin
+        async function checkAdminAuth() {
+            try {
+                const res = await fetch('/api/me');
+                const data = await res.json();
+                if (!data.success || data.user.role !== 'admin') {
+                    window.location.href = '/login.html';
+                }
+            } catch (e) {
+                window.location.href = '/login.html';
+            }
+        }
+        checkAdminAuth();
+        //dang xuat
+        async function logout() {
+            await fetch('/api/logout');
+            window.location.href = '/login.html';
         }
 
         //neu tren url co truyen deviceId sau khi upload/delete tu dong gan vao o input
@@ -204,7 +225,7 @@
         async function addNewDevice() {
             const newId = newDeviceIdInput.value.trim();
             if (!newId) {
-                alert('Vui long nhap thiet bi moi!');
+                alert('Vui lòng nhập thiết bị mới!');
                 return;
             }
 
@@ -217,11 +238,11 @@
                     newDeviceIdInput.value = ''; //xoa o nhap
                     setActiveDevice(newId); //chuyen samg trang quan ly tv vua tao
                 } else {
-                    alert('Khong the tao thiet bi moi');
+                    alert('Không thể tạo thiết bị mới');
                 }
             } catch (err) {
-                console.error('Loi them thiet bi', err);
-                alert('Co loi xay ra khi them thiet bi');
+                console.error('Lỗi thêm thiết bị', err);
+                alert('Có lỗi xảy ra khi thêm thiết bị');
             }
         }
 
@@ -237,7 +258,7 @@
                     const deviceKeys = Object.keys(devices);
 
                     if (deviceKeys.length === 0) {
-                        deviceListContainer.innerHTML = '<p style="color: gray;"> Chua co thiet bi ket noi</p>';
+                        deviceListContainer.innerHTML = '<p style="color: gray;"> Chưa có thiết bị mới</p>';
                         return;              
                     }
 
@@ -255,18 +276,18 @@
                         div.innerHTML = `
                             <div>
                                 <strong>${devId}</strong><br>
-                                <small style="color: gray;">${itemsCount} tep quang cao</small>
+                                <small style="color: gray;">${itemsCount} tệp</small>
                             </div>
                             <div>
-                                <button class="select" onClick="setActiveDevice('${devId}')">Quan ly</button>
-                                <button style="background: #dc3545; padding: 4px 8 px; font-size: 12px; margin-left: 5px;" onClick="deleteDevice('${devId}')">Xoa</button>
+                                <button class="select" onClick="setActiveDevice('${devId}')">Quản lý</button>
+                                <button style="background: #dc3545; padding: 4px 8 px; font-size: 12px; margin-left: 5px;" onClick="deleteDevice('${devId}')">Xoá</button>
                             </div>
                         `;
                         deviceListContainer.appendChild(div);
                     });
                 }
             } catch (err) {
-                console.error('Loi tai danh sach thiet bi', err);
+                console.error('Lỗi tải danh sách thiết bị', err);
             }
         }
 
@@ -284,7 +305,7 @@
                 tbody.innerHTML = '';
 
                     if (!result.items || result.items.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Chua co quang cao cho thiet bi </td></tr>'; 
+                        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Chưa có quảng cáo cho thiết bị </td></tr>'; 
                         return;
                     }
                     result.items.forEach(item => {
@@ -301,14 +322,14 @@
                                     onclick="toggleAdVisibility('${deviceId}', '${item.id}', ${isHidden})">
                                     ${isHidden ? 'Đang ẩn' : 'Đang hiện'}
                                 </button>
-                                <a href="/delete/${deviceId}/${item.id}" onclick="return confirm('Ban co chac muon xoa?')"><button>Xoa</button></a>
+                                <button onclick="deletePlaylistItem('${deviceId}', '${item.id}')">Xoá</button>
                             </td>
                         `;
                         tbody.appendChild(tr);
                     });
                 
             } catch (err) {
-                console.error('Loi tai playlist', err);
+                console.error('Lỗi tải playlist', err);
             }
              //goi khi load trang
             // loadPlaylist();
@@ -340,12 +361,12 @@
 
         //xoa thiet bi tv
         async function deleteDevice(deviceId) {
-            if (!confirm(`Ban chac chan muon xoa "${deviceId}"? Toan bo playlist cua thiet bi nay se bi mat`)) {
+            if (!confirm(`Bạn có chắc chắn muốn xoá "${deviceId}"? Toàn bộ playlist của thiết bị này cũng sẽ mất`)) {
                 return;
             }
 
             try {
-                const response = await fetch(`/api/delete-device/${deviceId}`);
+                const response = await fetch(`/api/delete-device/${deviceId}`, { method: 'DELETE' });
                 const result = await response.json();
 
                 if (result.success) {
@@ -368,11 +389,35 @@
                         loadDeviceList(); //chi tai lai danh sach ben trai neu xoa thiet bi
                     }
                 } else {
-                    alert('Khong the xoa thiet bi nay')
+                    alert('Không thể xoá thiết bị này')
                 }
             } catch (err) {
-                console.error('Loi khi xoa thiet bi', err);
-                alert('Co loi khi xoa thiet bi');
+                console.error('Lỗi khi xoá thiết bị', err);
+                alert('Có lỗi khi xoá thiết bị');
+            }
+        }
+
+        // Xóa một tệp/quảng cáo trong playlist
+        async function deletePlaylistItem(deviceId, id) {
+            if (!confirm('Bạn chắc chắn muốn xoá tệp này?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/playlist/${deviceId}/${id}`, {
+                    method: 'DELETE' // Dùng phương thức DELETE chuẩn REST
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    loadPlaylist(deviceId); // Tải lại bảng playlist
+                    loadDeviceList();      // Cập nhật lại số lượng tệp ở sidebar bên trái
+                } else {
+                    alert('Không thể xoá tệp: ' + (result.message || 'Lỗi không xác định'));
+                }
+            } catch (err) {
+                console.error('Lỗi khi xoá tệp', err);
+                alert('Có lỗi xảy ra khi kết nối server');
             }
         }
 
