@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Digital Signage</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif;
+            background: #f4f4f9; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            margin: 0; 
+        }
+        .login-card { 
+            background: white; 
+            padding: 30px; 
+            border-radius: 8px; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
+            width: 320px; 
+        }
+        .login-card .subtitle {
+            font-size: 14px;
+            color: #666;
+            text-align: center;
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-weight: normal;
+        }
+        h2 { 
+            text-align: center; 
+            margin-bottom: 5px; 
+            color: #333; 
+        }
+        input { 
+            width: 100%; 
+            padding: 10px; 
+            margin-bottom: 15px; 
+            border: 1px solid #ccc; 
+            border-radius: 4px; 
+            box-sizing: border-box; 
+        }
+        button { 
+            width: 100%; 
+            padding: 10px; 
+            background: #007bff; 
+            color: white; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            font-size: 16px; 
+        }
+        button:hover { 
+            background: #0056b3; 
+        }
+        .error { 
+            color: red; 
+            font-size: 14px; 
+            text-align: center; 
+            margin-bottom: 10px; 
+        }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <h2>Đăng Nhập</h2>
+        <p class="subtitle">Hệ thống Digital Signage</p>
+        <div id="errorMsg" class="error"></div>
+        <form id="loginForm">
+            <input type="text" id="username" placeholder="Tên đăng nhập" required><br>
+            <input type="password" id="password" placeholder="Mật khẩu" required><br>
+            <button type="submit">Đăng nhập</button>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    window.location.href = result.redirectUrl;
+                } else {
+                    document.getElementById('errorMsg').textContent = result.message;
+                }
+            } catch (err) {
+                document.getElementById('errorMsg').textContent = 'Có lỗi xảy ra khi kết nối server';
+            }
+        });
+    </script>
+</body>
+</html>

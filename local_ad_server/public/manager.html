@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="UTF-8">
+    <title>Ads Server Dashboard (Manager)</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 40px; 
+            background: #f4f4f9; 
+        }
+        h1, h2 { 
+            color: #333; 
+        }
+        .container { 
+            display: flex; 
+            gap: 20px; 
+        }
+        .sidebar { 
+            flex: 1; 
+            background: white; 
+            padding: 20px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+            max-height: 600px; 
+            overflow-y: auto; 
+        }
+        .main-content { 
+            flex: 2; 
+        }
+        .card { 
+            background: white; 
+            padding: 20px; 
+            margin-bottom: 20px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+        }
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 10px; 
+        }
+        th, td { 
+            border: 1px solid #ddd; 
+            padding: 10px; 
+            text-align: left; 
+        }
+        th { 
+            background-color: #007bff; 
+            color: white; 
+        }
+        button { 
+            background: #dc3545; 
+            color: white; 
+            border: none; 
+            padding: 6px 12px; 
+            cursor: pointer; 
+            border-radius: 4px; 
+        }
+        button.add { 
+            background: #28a745; 
+        }
+        button.select { 
+            background: #17a2b8; 
+            padding: 4px 8px; 
+            font-size: 12px; 
+        }
+        input { 
+            padding: 8px; 
+            margin-right: 10px; 
+        }
+        .tv-item { 
+            padding: 10px; 
+            border-bottom: 1px solid #eee; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+        }
+    </style>
+</head>
+<body>
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h1>Quản lý quảng cáo TV (MANAGER)</h1>
+        <button style="background: #6c757d;" onclick="logout()">Đăng xuất</button>
+    </div>
+
+    <div class="container">
+        <div class="sidebar">
+            <h2>Danh sách TV</h2>
+            <div id="deviceListContainer">
+                <p style="color: gray;"> Đang tải danh sách thiết bị...</p>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="card">
+                <h2>Playlist hiện tại của: <span id="labelDevice" style="color: #007bff;">TV_01</span></h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Tiêu đề</th>
+                            <th>Loại</th>
+                            <th>Thời lượng (s)</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="playlistTableBody">
+                        <tr><td colspan="5">Đang tải...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="card">
+                <h2> Tải lên tệp ảnh hoặc video để đặt làm quảng cáo</h2>
+                <form action="/upload" method="POST" enctype="multipart/form-data">
+                    <input type="hidden" name="deviceId" id="formDeviceId" value="TV_01">
+                    <input type="file" name="mediaFile" required accept="image/*,video/*"> <br><br>
+                    <label>Tiêu đề: </label><br>
+                    <input type="text" name="title" style="width: 100%;"><br><br>
+                    <label>Thời lượng hiển thị nếu là ảnh (giây): </label><br>
+                    <input type="number" name="duration" value="10" min="1"><br><br>
+                    <button type="submit" class="add">Tải lên</button>
+                </form> 
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function checkManagerAuth() {
+            try {
+                const res = await fetch('/api/me');
+                const data = await res.json();
+                if (!data.success) {
+                    window.location.href = '/login.html';
+                }
+            } catch (e) {
+                window.location.href = '/login.html';
+            }
+        }
+        checkManagerAuth();
+
+        async function logout() {
+            await fetch('/api/logout');
+            window.location.href = '/login.html';
+        }
+
+        const formDeviceId = document.getElementById('formDeviceId');
+        const labelDevice = document.getElementById('labelDevice');
+        const deviceListContainer = document.getElementById('deviceListContainer');
+
+        function setActiveDevice(deviceId) {
+            formDeviceId.value = deviceId;
+            labelDevice.textContent = deviceId;
+            loadPlaylist(deviceId);
+            loadDeviceList();
+        }
+
+        async function loadDeviceList() {
+            try {
+                const response = await fetch('/api/devices');
+                const result = await response.json();
+                if (result.success && result.devices) {
+                    deviceListContainer.innerHTML = '';
+                    const devices = result.devices;
+                    const deviceKeys = Object.keys(devices);
+                    if (deviceKeys.length === 0) {
+                        deviceListContainer.innerHTML = '<p style="color: gray;"> Chưa có thiết bị</p>';
+                        return;              
+                    }
+                    const currentActiveId = formDeviceId.value;
+                    deviceKeys.forEach(devId => {
+                        const itemsCount = devices[devId].length || 0;
+                        const div = document.createElement('div');
+                        div.className = 'tv-item';
+                        if (devId === currentActiveId) div.style.background = '#e2f0d9';
+                        div.innerHTML = `
+                            <div>
+                                <strong>${devId}</strong><br>
+                                <small style="color: gray;">${itemsCount} tệp</small>
+                            </div>
+                            <button class="select" onClick="setActiveDevice('${devId}')">Chọn</button>
+                        `;
+                        deviceListContainer.appendChild(div);
+                    });
+                }
+            } catch (err) { console.error(err); }
+        }
+
+        async function loadPlaylist(deviceId) {
+            try {
+                const response = await fetch(`/api/playlist?deviceId=${deviceId}&admin=true`);
+                const result = await response.json();
+                const tbody = document.getElementById('playlistTableBody');
+                tbody.innerHTML = '';
+
+                if (!result.items || result.items.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Chưa có quảng cáo </td></tr>'; 
+                    return;
+                }
+                result.items.forEach(item => {
+                    const isHidden = item.isHidden === true;
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${item.id}</td>
+                        <td>${item.title || ''}</td>
+                        <td><b>${item.type.toUpperCase()}</b></td>
+                        <td>${item.duration}</td>
+                        <td>
+                            <button class="select" style="background: ${isHidden ? '#6c757d' : '#28a745'};" 
+                                onclick="toggleAdVisibility('${deviceId}', '${item.id}', ${isHidden})">
+                                ${isHidden ? 'Đang ẩn' : 'Đang hiện'}
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (err) { console.error(err); }
+        }
+
+        async function toggleAdVisibility(deviceId, adId, show) {
+            try {
+                const response = await fetch('/api/toggle-ad', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ deviceId, adId, show })
+                });
+                const result = await response.json();
+                if (result.success) loadPlaylist(deviceId);
+            } catch (err) { console.error(err); }
+        }
+
+        setActiveDevice("tv_00");
+    </script>
+</body>
+</html>
