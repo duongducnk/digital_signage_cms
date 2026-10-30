@@ -24,7 +24,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.modifier.modifierLocalConsumer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.DefaultLifecycleObserver
@@ -66,8 +65,8 @@ class MainActivity : ComponentActivity() {
             setTurnScreenOn(true)
         } else {
             window.addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
-            or WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
-            or WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                    or WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+                    or WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         }
 
         val serviceIntent = android.content.Intent(this, AdsForegroundService::class.java)
@@ -99,7 +98,7 @@ class MainActivity : ComponentActivity() {
                     } else {
                         AdsPlayerScreen(
                             serverBaseUrl = "http://192.168.11.223:3000",
-                            //serverBaseUrl = "http://192.168.23.113:3000",
+                            //serverBaseUrl = "http://192.168.22.189:3000",
                             deviceId = currentDeviceId,
                             onSettingsClick = {
                                 isSettingMode = true //mo lai man hinh cai dat khi can
@@ -188,6 +187,8 @@ fun AdsPlayerScreen(
     deviceId: String,
     onSettingsClick: () -> Unit
 ) { //xu ly chuoi du lieu tu server
+
+    val context = LocalContext.current
     //tao url dong kem theo deviceId
     val serverUrl = "$serverBaseUrl/api/playlist?deviceId=$deviceId"
 
@@ -197,33 +198,63 @@ fun AdsPlayerScreen(
     var playbackKey by remember { mutableIntStateOf(0) } //khoa tang dan de buoc lam moi player, timer
     var isLoading by remember { mutableStateOf(true) }
 
-    LaunchedEffect(serverUrl) { //tai playlist tu server moi 10s
+    LaunchedEffect(serverUrl) {
+        // 1. NGAY KHI KHỞI ĐỘNG: Thử load cache cục bộ lên trước để phát ngay lập tức nếu mất mạng
+        val cachedList = loadPlaylistCache(context)
+        if (cachedList.isNotEmpty()) {
+            playlist = cachedList
+            isLoading = false
+        }
+
         while (true) {
             val fetchedList = fetchPlaylist(serverUrl)
             if (fetchedList.isNotEmpty()) {
-                if (playlist.isEmpty()) { //luc mo app
-                    playlist = fetchedList
-                    isLoading = false
-                } else {
-                    //neu dang chay quang cao thi luu vao pendingPlaylist
-                    //pendingPlaylist = fetchedList
-
-                    //cap nhat ngay neu danh sach tu server thay doi so voi hien tai
-                    //kiem tra bang cach so sanh kich thuoc hoac phan tu dau tien
-                    if (fetchedList != playlist) {
-                        playlist = fetchedList
-                        //dam bao currentIndex khong bi tran sau khi cap nhat danh sach
-                        if (currentIndex >= playlist.size) {
-                            currentIndex = 0
-                        }
-                    }
+                // Duyệt qua từng item và tải về bộ nhớ cục bộ trước khi phát
+                val localProcessedList = fetchedList.map { item ->
+                    val localPath = getOrDownloadLocalFile(context, item.url)
+                    // Thay thế URL mạng bằng đường dẫn file cục bộ
+                    item.copy(url = localPath)
                 }
+
+                if (localProcessedList != playlist) {
+                    playlist = localProcessedList
+                    isLoading = false
+
+                    // Đảm bảo currentIndex không bị tràn (out of bounds) sau khi cập nhật danh sách mới
+                    if (currentIndex >= playlist.size) {
+                        currentIndex = 0
+                    }
+
+                    // Lưu lại cache mới nhất để phòng lần sau mất mạng
+                    savePlaylistCache(context, localProcessedList)
+                }
+
+//                if (playlist.isEmpty()) { //luc mo app
+//                    playlist = localProcessedList
+//                    isLoading = false
+//                } else {
+//                    //neu dang chay quang cao thi luu vao pendingPlaylist
+//                    //pendingPlaylist = fetchedList
+//
+//                    //cap nhat ngay neu danh sach tu server thay doi so voi hien tai
+//                    //kiem tra bang cach so sanh kich thuoc hoac phan tu dau tien
+//                    if (localProcessedList != playlist) {
+//                        playlist = localProcessedList
+//                        //dam bao currentIndex khong bi tran sau khi cap nhat danh sach
+//                        if (currentIndex >= playlist.size) {
+//                            currentIndex = 0
+//                        }
+//                    }
+//                }
             } else {
                 //neu server tra ve danh sach rong
-                playlist = emptyList()
-                currentIndex = 0
+                if (playlist.isEmpty()) {
+                    playlist = emptyList()
+                    currentIndex = 0
+                    isLoading = false
+                }
             }
-            delay(5000) // thu lai sau moi 5s
+            delay(10000)  //tai playlist tu server moi 10s
         }
     }
 
@@ -261,7 +292,7 @@ fun AdsPlayerScreen(
             onClick = onSettingsClick,
             modifier = Modifier.align(Alignment.TopEnd).padding(16.dp)
         ) {
-            androidx.tv.material3.Text("Cai dat TV")
+            androidx.tv.material3.Text("Cài đặt TV")
         }
 
     }
