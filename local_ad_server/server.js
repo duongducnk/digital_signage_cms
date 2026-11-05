@@ -209,18 +209,34 @@ async function savePlaylist(deviceId, items) {
 //tra ve cau truc json chua link ads
 app.get('/api/playlist', async (req, res) => {  //tra ve playlist
     const deviceId = req.query.deviceId; //lay id tv tu client
+    const group = req.query.group;
+    const displayName = req.query.displayName;
     const forAdmin = req.query.admin === 'true';
 
     if (!deviceId) {
         return res.status(400).json({ success: false, message: "Thiếu tham số deviceId"});
     }
 
-    
-
     const parsed = await readAllPlaylist(); //neu chua co tv trong he thong, tao tv moi
-    if (!parsed.devices || !parsed.devices[deviceId]) {
-        await savePlaylist(deviceId, []);
-        //playlist = [];
+    if (!parsed.devices) {
+        //await savePlaylist(deviceId, []);
+        parsed.devices = {};
+    }
+
+    // Nếu TV chưa tồn tại, khởi tạo mới với đầy đủ group và displayName người dùng truyền vào
+    if (!parsed.devices[deviceId] || Array.isArray(parsed.devices[deviceId])) {
+        const existingPlaylist = Array.isArray(parsed.devices[deviceId]) ? parsed.devices[deviceId] : [];
+        parsed.devices[deviceId] = {
+            group: group || "tv",
+            displayName: displayName || deviceId,
+            playlist: existingPlaylist
+        };
+        await fs.promises.writeFile(playlistFilePath, JSON.stringify(parsed, null, 2), 'utf8');
+    } else {
+        // Nếu đã tồn tại nhưng người dùng có truyền cập nhật group/displayName mới khi tạo lại
+        if (group) parsed.devices[deviceId].group = group;
+        if (displayName) parsed.devices[deviceId].displayName = displayName;
+        await fs.promises.writeFile(playlistFilePath, JSON.stringify(parsed, null, 2), 'utf8');
     }
 
     let playlist = await readPlaylist(deviceId);

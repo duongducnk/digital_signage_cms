@@ -27,47 +27,20 @@
       "displayName": "01",
       "playlist": []
     },
-    "tang1_0": {
-      "group": "tang1",
-      "displayName": "00",
+    "duoc1": {
+      "group": "Tầng 1",
+      "displayName": "TV Dược trái",
       "playlist": []
     },
-    "tang2_0": {
-      "group": "tang2",
-      "displayName": "00",
+    "khamyc1": {
+      "group": "Tầng 2",
+      "displayName": "TV bên trái lễ tân khám yêu cầu",
       "playlist": []
     },
-    "tang2_1": {
-      "group": "tang2",
-      "displayName": "01",
+    "khamyc2": {
+      "group": "Tầng 2",
+      "displayName": "TV bên phải lễ tân khám yêu cầu",
       "playlist": []
-    },
-    "tang3_1": {
-      "group": "tv",
-      "displayName": "tang3_1",
-      "playlist": []
-    },
-    "tang3_3": {
-      "group": "tv",
-      "displayName": "tang3_3",
-      "playlist": [
-        {
-          "id": "1793866967525-378",
-          "title": "zzz.png",
-          "type": "image",
-          "url": "http://192.168.23.148:3000/media/1793866967513-zzz.png",
-          "duration": 10,
-          "isHidden": false
-        },
-        {
-          "id": "1793866974436-305",
-          "title": "sample_10s_720p.mp4",
-          "type": "video",
-          "url": "http://192.168.23.148:3000/media/1793866974374-sample_10s_720p.mp4",
-          "duration": 0,
-          "isHidden": false
-        }
-      ]
     }
   }
 }
