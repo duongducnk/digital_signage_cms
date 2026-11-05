@@ -150,10 +150,29 @@
             <!-- Add Device Card -->
             <div class="bg-white dark:bg-[#065084]/60 backdrop-blur p-6 rounded-2xl border border-[#A3DC9A]/60 dark:border-[#0F828C]/30 shadow-md dark:shadow-xl transition-colors duration-300">
                 <h2 class="text-lg font-semibold text-slate-800 dark:text-white mb-3">➕Thêm TV mới</h2>
-                <div class="flex flex-col sm:flex-row gap-3">
-                    <input class="flex-1 bg-slate-50 dark:bg-[#031118]/60 border border-slate-200 dark:border-[#0F828C]/40 rounded-xl px-4 py-2.5 text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#A3DC9A] dark:focus:border-cyan-300 transition"
-                    type="text" id="newDeviceIdInput" placeholder="Vi du: tv_sanh8">
-                    <button class="bg-[#A3DC9A] dark:bg-[#0F828C] hover:bg-[#92cb87] dark:hover:bg-[#0d6d76] text-slate-900 dark:text-white font-semibold px-6 py-2.5 rounded-xl transition shadow-sm"
+                <div class="space-y-3">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div>
+                            <!-- Ô nhập mã ID thiết bị (Bắt buộc) -->
+                            <label class="block text-xs font-medium text-slate-600 dark:text-cyan-200 mb-1">Mã TV:</label>
+                            <input class="w-full bg-slate-50 dark:bg-[#031118]/60 border border-slate-200 dark:border-[#0F828C]/40 rounded-xl px-3 py-2 text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#A3DC9A] dark:focus:border-cyan-300 transition text-sm"
+                                type="text" id="newDeviceIdInput" placeholder="Ví dụ: tv03">
+                        </div>
+                        <div>
+                            <!-- Ô nhập nhóm/tầng (group) -->
+                            <label class="block text-xs font-medium text-slate-600 dark:text-cyan-200 mb-1">Tầng:</label>
+                            <input class="w-full bg-slate-50 dark:bg-[#031118]/60 border border-slate-200 dark:border-[#0F828C]/40 rounded-xl px-3 py-2 text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#A3DC9A] dark:focus:border-cyan-300 transition text-sm"
+                                type="text" id="newDeviceGroupInput" placeholder="VD: Tầng 2">
+                        </div>
+                        <div>
+                            <!-- Ô nhập tên hiển thị (displayName) -->
+                            <label class="block text-xs font-medium text-slate-600 dark:text-cyan-200 mb-1">Tên hiển thị:</label>
+                            <input class="w-full bg-slate-50 dark:bg-[#031118]/60 border border-slate-200 dark:border-[#0F828C]/40 rounded-xl px-3 py-2 text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#A3DC9A] dark:focus:border-cyan-300 transition text-sm"
+                                type="text" id="newDeviceNameInput" placeholder="VD: Phòng họp">
+                        </div>
+                    </div>            
+                    
+                    <button class="bg-[#A3DC9A] dark:bg-[#0F828C] hover:bg-[#92cb87] dark:hover:bg-[#0d6d76] text-slate-900 dark:text-white font-semibold px-6 py-2.5 rounded-xl transition shadow-sm text-sm"
                     onclick="addNewDevice()">Thêm TV</button>
                 </div>
             </div>
@@ -228,6 +247,9 @@
         //them tv moi vao danh sach
         async function addNewDevice() {
             const newId = newDeviceIdInput.value.trim();
+            const group = newDeviceGroupInput.value.trim() || 'tv';
+            const displayName = newDeviceNameInput.value.trim() || newId;
+            
             if (!newId) {
                 alert('Vui lòng nhập thiết bị mới!');
                 return;
@@ -235,12 +257,14 @@
 
             try {
                 //goi api tao playlist cho tv moi
-                const response = await fetch(`/api/playlist?deviceId=${newId}&admin=true`);
+                const response = await fetch(`/api/playlist?deviceId=${encodeURIComponent(newId)}&group=${encodeURIComponent(group)}&displayName=${encodeURIComponent(displayName)}&admin=true`);
                 const result = await response.json();
 
                 if (result.success !== false) {
-                    await loadDeviceList();
                     newDeviceIdInput.value = ''; //xoa o nhap
+                    newDeviceGroupInput.value = '';
+                    newDeviceNameInput.value = '';
+                    await loadDeviceList();
                     setActiveDevice(newId); //chuyen sang trang quan ly tv vua tao
                 } else {
                     alert('Không thể tạo thiết bị mới');
