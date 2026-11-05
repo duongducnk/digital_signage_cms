@@ -1,32 +1,73 @@
 {
   "devices": {
-    "tv_01": [],
-    "tv_02": [],
-    "tv_00": [
-      {
-        "id": "1791940361110-620",
-        "title": "hi3",
-        "type": "image",
-        "url": "http://192.168.21.180:3000/media/1791940361081-hi3.png",
-        "duration": 10,
-        "isHidden": false
-      },
-      {
-        "id": "1791940491530-652",
-        "title": "zzz",
-        "type": "image",
-        "url": "http://192.168.21.180:3000/media/1791940491526-zzz.png",
-        "duration": 10,
-        "isHidden": false
-      },
-      {
-        "id": "1791966379920-904",
-        "title": "10",
-        "type": "video",
-        "url": "http://192.168.21.180:3000/media/1791966379869-sample_10s_720p.mp4",
-        "duration": 0,
-        "isHidden": true
-      }
-    ]
+    "tv_00": {
+      "group": "tv",
+      "displayName": "00",
+      "playlist": [
+        {
+          "id": "1793862149706-401",
+          "title": "hi3.png",
+          "type": "image",
+          "url": "http://192.168.23.148:3000/media/1793862149698-hi3.png",
+          "duration": 10,
+          "isHidden": false
+        },
+        {
+          "id": "1793862159286-975",
+          "title": "sample_10s_720p.mp4",
+          "type": "video",
+          "url": "http://192.168.23.148:3000/media/1793862159147-sample_10s_720p.mp4",
+          "duration": 0,
+          "isHidden": false
+        }
+      ]
+    },
+    "tv_01": {
+      "group": "tv",
+      "displayName": "01",
+      "playlist": []
+    },
+    "tang1_0": {
+      "group": "tang1",
+      "displayName": "00",
+      "playlist": []
+    },
+    "tang2_0": {
+      "group": "tang2",
+      "displayName": "00",
+      "playlist": []
+    },
+    "tang2_1": {
+      "group": "tang2",
+      "displayName": "01",
+      "playlist": []
+    },
+    "tang3_1": {
+      "group": "tv",
+      "displayName": "tang3_1",
+      "playlist": []
+    },
+    "tang3_3": {
+      "group": "tv",
+      "displayName": "tang3_3",
+      "playlist": [
+        {
+          "id": "1793866967525-378",
+          "title": "zzz.png",
+          "type": "image",
+          "url": "http://192.168.23.148:3000/media/1793866967513-zzz.png",
+          "duration": 10,
+          "isHidden": false
+        },
+        {
+          "id": "1793866974436-305",
+          "title": "sample_10s_720p.mp4",
+          "type": "video",
+          "url": "http://192.168.23.148:3000/media/1793866974374-sample_10s_720p.mp4",
+          "duration": 0,
+          "isHidden": false
+        }
+      ]
+    }
   }
 }

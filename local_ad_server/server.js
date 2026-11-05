@@ -141,7 +141,7 @@ async function readAllPlaylist() { //doc toan bo playlist
             const parsed = JSON.parse(data);
 
             if (Array.isArray(parsed.items)) {
-                return { devices: { 'default_tv': parsed.items } };
+                return { devices: { 'default_tv': { group: "tv", displayName: "default", playlist: parsed.items } } };
             }
             return parsed; //parsed.devices && parsed.deviceId ? parsed.devices[deviceId] : [];
         }
@@ -155,9 +155,17 @@ async function readPlaylist(deviceId) {
     if (!deviceId) return [];
     try  {
         const parsed = await readAllPlaylist();
-        return (parsed.devices && parsed.devices[deviceId]) ? parsed.devices[deviceId] : [];
+        //return (parsed.devices && parsed.devices[deviceId]) ? parsed.devices[deviceId] : [];
+        
+        if (!parsed.devices || !parsed.devices[deviceId]) return [];
+        const devData = parsed.devices[deviceId];
+        // Nếu là object cấu hình mới, lấy mảng .playlist. Nếu là mảng cũ thì trả về luôn.
+        if (Array.isArray(devData)) return devData;
+        if (devData && Array.isArray(devData.playlist)) return devData.playlist;
+        
+        return [];
     } catch (error) {
-        console.error("Loi khi doc file playlist.json", error);
+        console.error("Lỗi khi đọc playlist của thiết bị", error);
         return [];
     }
 }
@@ -171,16 +179,29 @@ async function savePlaylist(deviceId, items) {
                 parsed.devices = {};
             }
 
+            let existing = parsed.devices[deviceId];
+            // Nếu thiết bị chưa tồn tại hoặc đang là mảng cũ, khởi tạo chuẩn object mới
+            if (!existing || Array.isArray(existing) || typeof existing !== 'object') {
+                parsed.devices[deviceId] = {
+                    group: existing?.group || "tv",
+                    displayName: existing?.displayName || deviceId,
+                    playlist: Array.isArray(items) ? items : []
+                };
+            } else {
+                // Cập nhật lại mảng playlist bên trong object
+                existing.playlist = Array.isArray(items) ? items : [];
+            }
+
             // chuyen cau truc luu json cu sang moi
             // if (!parsed.devices) {
             //     parsed = { devices: { default_tv: parsed.items || [] } };
             // }
 
-            parsed.devices[deviceId] = items;
+            //parsed.devices[deviceId] = items;
             //const data = JSON.stringify({ items: items}, null, 2);
             await fs.promises.writeFile(playlistFilePath, JSON.stringify(parsed, null, 2), 'utf8');
         } catch (error) {
-        console.error("Lỗi khi file playlist.json", error);
+        console.error("Lỗi khi ghi file playlist.json", error);
     }
 }
 
@@ -194,13 +215,15 @@ app.get('/api/playlist', async (req, res) => {  //tra ve playlist
         return res.status(400).json({ success: false, message: "Thiếu tham số deviceId"});
     }
 
-    let playlist = await readPlaylist(deviceId);
+    
 
     const parsed = await readAllPlaylist(); //neu chua co tv trong he thong, tao tv moi
     if (!parsed.devices || !parsed.devices[deviceId]) {
         await savePlaylist(deviceId, []);
-        playlist = [];
+        //playlist = [];
     }
+
+    let playlist = await readPlaylist(deviceId);
 
     //neu la admin thi tra ve toan bo playlist, neu la tv thi loc bo item an
     const finalPlaylist = forAdmin ? playlist : playlist.filter(item => item.isHidden !== true);
@@ -256,8 +279,23 @@ app.post('/upload', requireAuth, upload.single('mediaFile'), async (req, res) =>
     };
 
     //doc, them, luu vao playlist cua deviceId
-    const playlist = await readPlaylist(deviceId);
+    let playlist = await readPlaylist(deviceId);
+    if (!Array.isArray(playlist)) playlist = [];
+
     playlist.push(newItem);
+    // if (!devices[deviceId]) {
+    //     devices[deviceId] = { group: "DEFAULT", displayName: deviceId, playlist: [] };
+    // }
+    // // Nếu cấu trúc cũ vẫn là mảng, chuyển đổi sang object hoặc push trực tiếp
+    // if (Array.isArray(devices[deviceId])) {
+    //     devices[deviceId].push(newItem);
+    // } else {
+    //     // Cấu trúc mới: đẩy vào mảng nằm bên trong thuộc tính .playlist
+    //     if (!devices[deviceId].playlist) {
+    //         devices[deviceId].playlist = [];
+    //     }
+    //     devices[deviceId].playlist.push(newItem);
+    // }
     await savePlaylist(deviceId, playlist);
 
     const redirectPath = req.session.user.role === 'admin' ? '/' : '/manager.html';
@@ -302,7 +340,7 @@ app.delete('/api/playlist/:deviceId/:id', requireAdmin, async (req, res) => {
     if (itemToDelete) {
         try {
             //trich xuat ten file tu url de xoa trong /media
-            const filename = itemToDelete.url.split('/media/')[1];
+            const filename = itemToDelete.url ? itemToDelete.url.split('/media/')[1] : null;
             if (filename) {
                 const filePath = path.join(mediaDir, filename);
                 if (fs.existsSync(filePath)) {
@@ -330,10 +368,15 @@ app.delete('/api/delete-device/:deviceId', requireAdmin, async (req, res) => {
 
     if (parsed.devices && parsed.devices[deviceId]) {
         //xoa file vat ly tren may
-        const items = parsed.devices[deviceId];
+        // const items = parsed.devices[deviceId];
+
+        const devData = parsed.devices[deviceId];
+        // Lấy mảng items an toàn từ object hoặc array cũ
+        const items = Array.isArray(devData) ? devData : (devData?.playlist || []);
+
         for (const item of items) {
             try {
-                const filename = item.url.split('/media/')[1];
+                const filename = item.url ? item.url.split('/media/')[1] : null;
                 if (filename) {
                     const filePath = path.join(mediaDir, filename);
                     if (fs.existsSync(filePath)) {
