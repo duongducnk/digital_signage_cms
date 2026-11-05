@@ -48,13 +48,31 @@
         
         <!-- COT TRAI: Sidebar danh sách TV -->
         <div class="w-full lg:w-1/4 bg-white dark:bg-[#065084]/60 backdrop-blur p-5 rounded-2xl border border-[#A3DC9A]/60 dark:border-[#0F828C]/30 shadow-md dark:shadow-xl h-fit transition-colors duration-300">
-            <div class="flex justify-between items-center mb-4">
+            <div class="flex justify-between items-center mb-3">
                 <h2 class="text-base font-semibold text-slate-700 dark:text-cyan-200">Danh sách TV</h2>
-                <!-- <span class="text-xs bg-[#A3DC9A]/40 dark:bg-[#0F828C] text-slate-700 dark:text-white px-2 py-0.5 rounded-full font-medium">
-                    LAN
-                </span> -->
+                <span class="text-xs bg-[#A3DC9A]/40 dark:bg-[#0F828C] text-slate-700 dark:text-white px-2 py-0.5 rounded-full font-medium"
+                    id="deviceCountBadge">
+                    0 TV
+                </span>
             </div>
-            <div class="space-y-3" id="deviceListContainer">
+
+            <!-- BỘ LỌC TÌM KIẾM & PHÂN NHÓM TẦNG -->
+             <div class="space-y-2 mb-4">
+                <!-- Ô tìm kiếm theo tên/ID -->
+                <input class="w-full bg-slate-50 dark:bg-[#031118]/60 border border-slate-200 dark:border-[#0F828C]/40 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#A3DC9A] dark:focus:border-cyan-300 transition"
+                    type="text" id="searchDeviceInput" oninput="filterDeviceList()" placeholder="🔍 Tìm kiếm TV...">
+                
+                <!-- Select lọc theo Tầng/Khu vực -->
+                <select class="w-full bg-slate-50 dark:bg-[#031118]/60 border border-slate-200 dark:border-[#0F828C]/40 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-[#A3DC9A] dark:focus:border-cyan-300 transition"
+                    id="filterGroupSelect" onchange="filterDeviceList()">
+                    <option value="ALL">Tất cả khu vực / Tầng</option>
+                    <!-- Lựa chọn tầng sẽ được tự động trích xuất từ dữ liệu hoặc thêm thủ công -->
+                </select>
+            </div>
+
+            <!-- Danh sách hiển thị sau khi lọc (Giới hạn chiều cao cuộn mượt) -->
+            <div class="space-y-2.5 max-h-[500px] overflow-y-auto pr-1" 
+                id="deviceListContainer">
                 <p class="text-slate-400 dark:text-slate-300 text-sm italic">Đang tải danh sách thiết bị...</p>
             </div>
         </div>
@@ -155,6 +173,9 @@
         const deviceListContainer = document.getElementById('deviceListContainer');
         const newDeviceIdInput = document.getElementById('newDeviceIdInput');
 
+        // Biến toàn cục lưu danh sách thiết bị đầy đủ từ server
+        let rawDevicesData = {};
+
         //lay tham so tren url
         function getQueryParam(param) {
             const urlParams = new URLSearchParams(window.location.search);
@@ -214,10 +235,11 @@
 
             try {
                 //goi api tao playlist cho tv moi
-                const response = await fetch(`/api/playlist?deviceId=${newId}`);
+                const response = await fetch(`/api/playlist?deviceId=${newId}&admin=true`);
                 const result = await response.json();
 
                 if (result.success !== false) {
+                    await loadDeviceList();
                     newDeviceIdInput.value = ''; //xoa o nhap
                     setActiveDevice(newId); //chuyen sang trang quan ly tv vua tao
                 } else {
@@ -236,44 +258,144 @@
                 const result = await response.json();
 
                 if (result.success && result.devices) {
-                    deviceListContainer.innerHTML = '';
-                    const devices = result.devices;
-                    const deviceKeys = Object.keys(devices);
+                    rawDevicesData = result.devices;
+                    updateGroupDropdownOptions(); // Cập nhật danh sách Tầng vào ô Select
+                    filterDeviceList(); // Hiển thị danh sách dựa theo bộ lọc
+                    // if (deviceKeys.length === 0) {
+                    //     deviceListContainer.innerHTML = '<p class="text-slate-400 dark:text-slate-300 text-sm italic"> Chưa có thiết bị mới</p>';
+                    //     return;              
+                    // }
 
-                    if (deviceKeys.length === 0) {
-                        deviceListContainer.innerHTML = '<p class="text-slate-400 dark:text-slate-300 text-sm italic"> Chưa có thiết bị mới</p>';
-                        return;              
-                    }
+                    // deviceKeys.forEach(devId => {
+                    //     const itemsCount = devices[devId].length || 0;
+                    //     const isCurrent = devId === currentActiveId;
 
-                    const currentActiveId = formDeviceId.value;
-
-                    deviceKeys.forEach(devId => {
-                        const itemsCount = devices[devId].length || 0;
-                        const isCurrent = devId === currentActiveId;
-
-                        const div = document.createElement('div');
-                        div.className = isCurrent
-                            ? 'p-3 rounded-xl bg-[#A3DC9A]/30 dark:bg-[#0F828C]/40 border border-[#A3DC9A] dark:border-cyan-400 flex justify-between items-center transition shadow-sm'
-                            : 'p-3 rounded-xl bg-slate-50 dark:bg-[#031118]/40 border border-slate-200 dark:border-[#0F828C]/20 hover:bg-slate-100 dark:hover:bg-[#0F828C]/20 flex justify-between items-center transition';
+                    //     const div = document.createElement('div');
+                    //     div.className = isCurrent
+                    //         ? 'p-3 rounded-xl bg-[#A3DC9A]/30 dark:bg-[#0F828C]/40 border border-[#A3DC9A] dark:border-cyan-400 flex justify-between items-center transition shadow-sm'
+                    //         : 'p-3 rounded-xl bg-slate-50 dark:bg-[#031118]/40 border border-slate-200 dark:border-[#0F828C]/20 hover:bg-slate-100 dark:hover:bg-[#0F828C]/20 flex justify-between items-center transition';
                         
-                        div.innerHTML = `
-                            <div>
-                                <strong class="text-slate-800 dark:text-white font-semibold">${devId}</strong><br>
-                                <span class="text-xs text-slate-500 dark:text-cyan-300">${itemsCount} tệp</span>
-                            </div>
-                            <div class="flex items-center space-x-2">
-                                <button class="bg-[#A3DC9A] dark:bg-[#0F828C] hover:bg-[#92cb87] dark:hover:bg-[#0d6d76] text-slate-900 dark:text-white font-medium px-3 py-1.5 rounded-lg text-xs transition"
-                                onClick="setActiveDevice('${devId}')">Quản lý</button>
-                                <button class="bg-red-50 dark:bg-red-500/20 hover:bg-red-100 dark:hover:bg-red-500/30 text-red-600 dark:text-red-300 border border-red-200 dark:border-red-500/30 px-2.5 py-1.5 rounded-lg text-xs transition"
-                                onClick="deleteDevice('${devId}')">Xoá</button>
-                            </div>
-                        `;
-                        deviceListContainer.appendChild(div);
-                    });
+                    //     div.innerHTML = `
+                    //         <div>
+                    //             <strong class="text-slate-800 dark:text-white font-semibold">${devId}</strong><br>
+                    //             <span class="text-xs text-slate-500 dark:text-cyan-300">${itemsCount} tệp</span>
+                    //         </div>
+                    //         <div class="flex items-center space-x-2">
+                    //             <button class="bg-[#A3DC9A] dark:bg-[#0F828C] hover:bg-[#92cb87] dark:hover:bg-[#0d6d76] text-slate-900 dark:text-white font-medium px-3 py-1.5 rounded-lg text-xs transition"
+                    //             onClick="setActiveDevice('${devId}')">Quản lý</button>
+                    //             <button class="bg-red-50 dark:bg-red-500/20 hover:bg-red-100 dark:hover:bg-red-500/30 text-red-600 dark:text-red-300 border border-red-200 dark:border-red-500/30 px-2.5 py-1.5 rounded-lg text-xs transition"
+                    //             onClick="deleteDevice('${devId}')">Xoá</button>
+                    //         </div>
+                    //     `;
+                    //     deviceListContainer.appendChild(div);
+                    // });
                 }
             } catch (err) {
                 console.error('Lỗi tải danh sách thiết bị', err);
             }
+        }
+
+        // Tự động nhận diện danh sách các Tầng/Khu vực từ tên TV (VD: tang1_sanh -> Tầng 1)
+        function updateGroupDropdownOptions() {
+            const groupSelect = document.getElementById('filterGroupSelect');
+            const selectedValue = groupSelect.value;
+            const deviceKeys = Object.keys(rawDevicesData);
+
+            const groups = new Set();
+            deviceKeys.forEach(devId => {
+                const deviceObj = rawDevicesData[devId];
+                // Chỉ lấy group nếu là thiết bị hợp lệ có chứa thuộc tính playlist
+                if (deviceObj && !Array.isArray(deviceObj) && Array.isArray(deviceObj.playlist)) {
+                    const group = deviceObj.group || 'DEFAULT';
+                    groups.add(group);
+                }
+                // Tìm các tiền tố (prefix) trước dấu gạch dưới _, ví dụ: "tang1", "tang2", "sanh"
+                // if (id.includes('_')) {
+                //     const prefix = id.split('_')[0].toUpperCase();
+                //     groups.add(prefix);
+                // }
+            });
+
+            // Reset lại ô Select
+            groupSelect.innerHTML = '<option value="ALL">Tất cả khu vực tầng</option>';
+            groups.forEach(group => {
+                const option = document.createElement('option');
+                option.value = group;
+                option.textContent = `Khu vực: ${group}`;
+                groupSelect.appendChild(option);
+            });
+
+            // Giữ lại lựa chọn hiện tại nếu có
+            groupSelect.value = selectedValue;
+        }
+
+        // Hàm lọc thiết bị theo Từ khóa tìm kiếm & Tầng đang chọn
+        function filterDeviceList() {
+            const searchKey = document.getElementById('searchDeviceInput').value.toLowerCase().trim();
+            const selectedGroup = document.getElementById('filterGroupSelect').value;
+            const currentActiveId = formDeviceId.value;
+
+            const deviceKeys = Object.keys(rawDevicesData);
+            deviceListContainer.innerHTML = '';
+
+            // Lọc thiết bị thỏa mãn đồng thời cả 2 điều kiện
+            const filteredKeys = deviceKeys.filter(devId => {
+                const deviceObj = rawDevicesData[devId]; // Lấy object của TV (gồm group, displayName, playlist)
+                
+                // Bỏ qua các key rỗng {} không có cấu hình playlist (như tang1_0, tang2_0, ...)
+                if (!deviceObj || Array.isArray(deviceObj) || !Array.isArray(deviceObj.playlist)) {
+                    return false;
+                }
+                
+                const groupName = deviceObj.group || 'DEFAULT';
+                const displayName = deviceObj.displayName || devId;
+
+                // Kiểm tra từ khóa tìm kiếm trên ID hoặc tên hiển thị
+                const matchesSearch = devId.toLowerCase().includes(searchKey) || displayName.toLowerCase().includes(searchKey);
+                
+                // Kiểm tra thuộc tính tầng lưu ẩn
+                let matchesGroup = true;
+                if (selectedGroup !== 'ALL') {
+                    // matchesGroup = devId.toUpperCase().startsWith(selectedGroup + '_') || devId.toUpperCase() === selectedGroup;
+                    // Lọc theo thuộc tính group ẩn thay vì cắt chuỗi tên ID
+                    matchesGroup = (groupName === selectedGroup);
+                }
+
+                return matchesSearch && matchesGroup;
+            });
+
+            // Cập nhật số lượng đếm trên Badge
+            document.getElementById('deviceCountBadge').textContent = `${filteredKeys.length} TV`;
+
+            if (filteredKeys.length === 0) {
+                deviceListContainer.innerHTML = '<p class="text-slate-400 dark:text-slate-300 text-xs italic text-center py-4">Không tìm thấy TV</p>';
+                return;              
+            }
+
+            // Hiển thị danh sách thiết bị sau khi lọc
+            filteredKeys.forEach(devId => {
+                const deviceObj = rawDevicesData[devId];
+                const playlistArray = deviceObj.playlist || [];
+                const itemsCount = playlistArray.length || 0;
+                const isCurrent = devId === currentActiveId;
+
+                const div = document.createElement('div');
+                div.className = isCurrent 
+                    ? 'p-3 rounded-xl bg-[#A3DC9A]/30 dark:bg-[#0F828C]/40 border border-[#A3DC9A] dark:border-cyan-400 flex justify-between items-center transition shadow-sm' 
+                    : 'p-3 rounded-xl bg-slate-50 dark:bg-[#031118]/40 border border-slate-200 dark:border-[#0F828C]/20 hover:bg-slate-100 dark:hover:bg-[#0F828C]/20 flex justify-between items-center transition';
+                
+                div.innerHTML = `
+                    <div>
+                        <strong class="text-slate-800 dark:text-white font-semibold text-sm">${devId}</strong><br>
+                        <span class="text-[11px] text-slate-500 dark:text-cyan-300">${itemsCount} tệp</span>
+                    </div>
+                    <div class="flex items-center space-x-1.5">
+                        <button class="bg-[#A3DC9A] dark:bg-[#0F828C] hover:bg-[#92cb87] dark:hover:bg-[#0d6d76] text-slate-900 dark:text-white font-medium px-2.5 py-1 rounded-lg text-xs transition" onClick="setActiveDevice('${devId}')">Quản lý</button>
+                        <button class="bg-red-50 dark:bg-red-500/20 hover:bg-red-100 dark:hover:bg-red-500/30 text-red-600 dark:text-red-300 border border-red-200 dark:border-red-500/30 px-2 py-1 rounded-lg text-xs transition" onClick="deleteDevice('${devId}')">Xoá</button>
+                    </div>
+                `;
+                deviceListContainer.appendChild(div);
+            });
         }
 
         //tai playlist theo deviceId hien tai
@@ -363,6 +485,7 @@
                 const result = await response.json();
 
                 if (result.success) {
+                    await loadDeviceList();
                     //neu thiet bi dang chon bi xoa, tu dong chuyen ve thiet bi dau tien
                     if ( formDeviceId.value === deviceId) {
                         const resDevices = await fetch('/api/devices');
