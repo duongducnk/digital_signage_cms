@@ -41,6 +41,39 @@
       "group": "Tầng 2",
       "displayName": "TV bên phải lễ tân khám yêu cầu",
       "playlist": []
+    },
+    "test": {
+      "group": "tang 3",
+      "displayName": "ab",
+      "playlist": [
+        {
+          "id": "1793955874891-587",
+          "mediaId": "media_1793954408292_893",
+          "title": "hi3.png",
+          "type": "image",
+          "url": "http://192.168.23.153:3000/media/1793954408285-hi3.png",
+          "duration": 10,
+          "isHidden": false,
+          "origin": "admin_shared",
+          "canDelete": false
+        }
+      ]
     }
-  }
+  },
+  "mediaLibrary": [
+    {
+      "id": "media_1793954408292_893",
+      "title": "hi3.png",
+      "type": "image",
+      "url": "http://192.168.23.153:3000/media/1793954408285-hi3.png",
+      "duration": 10
+    },
+    {
+      "id": "media_1793954413397_672",
+      "title": "sample_10s_720p.mp4",
+      "type": "video",
+      "url": "http://192.168.23.153:3000/media/1793954413380-sample_10s_720p.mp4",
+      "duration": 0
+    }
+  ]
 }
