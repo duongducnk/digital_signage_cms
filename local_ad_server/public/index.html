@@ -95,13 +95,14 @@
                             <tr class="border-b border-slate-100 dark:border-[#0F828C]/40 text-slate-500 dark:text-cyan-200 text-xs uppercase tracking-wider bg-slate-50/50 dark:bg-transparent">
                                 <th class="py-3 px-4">ID</th>
                                 <th class="py-3 px-4">Tiêu đề</th>
+                                <th class="py-3 px-4">Nguồn gốc</th>
                                 <th class="py-3 px-4">Loại</th>
                                 <th class="py-3 px-4">Thời lượng (s)</th>
                                 <th class="py-3 px-4 text-center">Thao tác</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100 dark:divide-[#0F828C]/20 text-sm" id="playlistTableBody">
-                            <tr><td class="py-6 text-center text-slate-400 dark:text-slate-300 italic" colspan="5">Đang tải...</td></tr>
+                            <tr><td class="py-6 text-center text-slate-400 dark:text-slate-300 italic" colspan="6">Đang tải...</td></tr>
                         </tbody>
                         <!-- ${playlist.map(item => `
                             <tr>
@@ -116,35 +117,50 @@
                 </div>  
             </div>
 
-            <!-- Upload Card -->
-            <div class="bg-white dark:bg-[#065084]/60 backdrop-blur p-6 rounded-2xl border border-[#A3DC9A]/60 dark:border-[#0F828C]/30 shadow-md dark:shadow-xl transition-colors duration-300">
-                <h2 class="text-lg font-semibold text-slate-800 dark:text-white mb-4">📤 Tải lên tệp ảnh hoặc video</h2>
-                <form class="space-y-4" action="/upload" method="POST" enctype="multipart/form-data">
-                    <input type="hidden" name="deviceId" id="formDeviceId" value="TV_01">
-                    <div>
-                        <!-- <label class="block text-sm text-slate-600 dark:text-cyan-200 mb-1">Chọn tệp (Ảnh / Video):</label> -->
-                        <input class="w-full text-sm text-slate-500 dark:text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-[#A3DC9A] dark:file:bg-[#0F828C] file:text-slate-900 dark:file:text-white hover:file:bg-[#92cb87] dark:hover:file:bg-[#0d6d76] cursor-pointer bg-slate-50 dark:bg-[#031118]/60 rounded-xl border border-slate-200 dark:border-[#0F828C]/40 p-2 transition" 
-                        type="file" name="mediaFile" required accept="image/*,video/*"> <br><br>
-                    </div>
+            <!-- Thêm tệp vào Playlist: Chọn từ Thư viện Media chung HOẶC Upload riêng -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm text-slate-600 dark:text-cyan-200 mb-1">Tiêu đề:</label>
-                            <input class="w-full bg-slate-50 dark:bg-[#031118]/60 border border-slate-200 dark:border-[#0F828C]/40 rounded-xl px-4 py-2.5 text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#A3DC9A] dark:focus:border-cyan-300 transition"
-                            type="text" name="title" placeholder="Nhập tiêu đề quảng cáo...">
-                        </div>
-                        <div>
-                            <label class="block text-sm text-slate-600 dark:text-cyan-200 mb-1">Thời lượng hiển thị nếu là ảnh (giây):</label>
-                            <input class="w-full bg-slate-50 dark:bg-[#031118]/60 border border-slate-200 dark:border-[#0F828C]/40 rounded-xl px-4 py-2.5 text-slate-800 dark:text-white focus:outline-none focus:border-[#A3DC9A] dark:focus:border-cyan-300 transition"
-                            type="number" name="duration" value="10" min="1">
+                <!-- Thẻ ẩn chứa deviceId hiện tại (Rất quan trọng để JS không bị null) -->
+                <input type="hidden" id="formDeviceId" value="tv_01">
+                
+                <!-- Tab 1: Chọn nhanh từ Thư viện Media chung -->
+                <div class="bg-white dark:bg-[#065084]/60 backdrop-blur p-6 rounded-2xl border border-[#A3DC9A]/60 dark:border-[#0F828C]/30 shadow-md dark:shadow-xl transition-colors duration-300 flex flex-col justify-between">
+                    <div>
+                        <h2 class="text-base font-semibold text-slate-800 dark:text-white mb-2">📂 Thêm từ Thư viện Media chung</h2>
+                        <p class="text-xs text-slate-500 dark:text-cyan-200 mb-3">Chọn các tệp do Admin đã tải lên hệ thống tổng:</p>
+                        
+                        <div id="mediaPoolContainer" class="space-y-2 max-h-[160px] overflow-y-auto pr-1 mb-4">
+                            <p class="text-xs text-slate-400 italic">Đang tải thư viện...</p>
                         </div>
                     </div>
-            
-                    <button class="bg-[#A3DC9A] dark:bg-[#0F828C] hover:bg-[#92cb87] dark:hover:bg-[#0d6d76] text-slate-900 dark:text-white font-semibold px-6 py-2.5 rounded-xl transition shadow-sm"
-                    type="submit">
-                        Tải lên
-                    </button>                       
-                </form> 
+                    <button class="w-full bg-[#A3DC9A] dark:bg-[#0F828C] hover:bg-[#92cb87] dark:hover:bg-[#0d6d76] text-slate-900 dark:text-white font-semibold px-4 py-2 rounded-xl transition shadow-sm text-sm" 
+                    onclick="addSelectedMediaToPlaylist()">
+                        Thêm tệp đã chọn vào TV
+                    </button>
+                </div>
+
+                <!-- Cột 2: Tải lên tệp mới trực tiếp vào Thư viện Media chung (Admin Upload) -->
+                <div class="bg-white dark:bg-[#065084]/60 backdrop-blur p-6 rounded-2xl border border-[#A3DC9A]/60 dark:border-[#0F828C]/30 shadow-md dark:shadow-xl transition-colors duration-300">
+                    <h2 class="text-base font-semibold text-slate-800 dark:text-white mb-2">📤 Tải lên tệp vào Thư viện chung</h2>
+                    <form class="space-y-3" id="uploadMediaPoolForm" onsubmit="uploadMediaToPool(event)">
+                        <div>
+                            <input class="w-full text-xs text-slate-500 dark:text-slate-300 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-[#A3DC9A] dark:file:bg-[#0F828C] file:text-slate-900 dark:file:text-white cursor-pointer bg-slate-50 dark:bg-[#031118]/60 rounded-xl border border-slate-200 dark:border-[#0F828C]/40 p-1.5 transition" 
+                            type="file" name="mediaFile" id="poolMediaFileInput" required accept="image/*,video/*">
+                        </div>
+                        <div>
+                            <input class="w-full bg-slate-50 dark:bg-[#031118]/60 border border-slate-200 dark:border-[#0F828C]/40 rounded-xl px-3 py-2 text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#A3DC9A] dark:focus:border-cyan-300 transition text-xs"
+                            type="text" name="title" id="poolMediaTitleInput" placeholder="Tiêu đề tệp trong kho chung...">
+                        </div>
+                        <div>
+                            <input class="w-full bg-slate-50 dark:bg-[#031118]/60 border border-slate-200 dark:border-[#0F828C]/40 rounded-xl px-3 py-2 text-slate-800 dark:text-white focus:outline-none focus:border-[#A3DC9A] dark:focus:border-cyan-300 transition text-xs"
+                            type="number" name="duration" id="poolMediaDurationInput" value="10" min="1" placeholder="Thời lượng ảnh (giây)">
+                        </div>
+                        <button class="w-full bg-[#A3DC9A] dark:bg-[#0F828C] hover:bg-[#92cb87] dark:hover:bg-[#0d6d76] text-slate-900 dark:text-white font-semibold px-4 py-2 rounded-xl transition shadow-sm text-sm" type="submit">
+                            Tải lên kho chung
+                        </button>                       
+                    </form> 
+                </div>
+
             </div>
 
             <!-- Add Device Card -->
@@ -175,7 +191,7 @@
                     <button class="bg-[#A3DC9A] dark:bg-[#0F828C] hover:bg-[#92cb87] dark:hover:bg-[#0d6d76] text-slate-900 dark:text-white font-semibold px-6 py-2.5 rounded-xl transition shadow-sm text-sm"
                     onclick="addNewDevice()">Thêm TV</button>
                 </div>
-            </div>
+            </div> 
         </div>
     </div>
     
@@ -190,8 +206,8 @@
         const formDeviceId = document.getElementById('formDeviceId');
         const labelDevice = document.getElementById('labelDevice')
         const deviceListContainer = document.getElementById('deviceListContainer');
-        const newDeviceIdInput = document.getElementById('newDeviceIdInput');
-
+        const mediaPoolContainer = document.getElementById('mediaPoolContainer');
+        
         // Biến toàn cục lưu danh sách thiết bị đầy đủ từ server
         let rawDevicesData = {};
 
@@ -222,12 +238,7 @@
 
         //neu tren url co truyen deviceId sau khi upload/delete tu dong gan vao o input
         const urlDeviceId = getQueryParam('deviceId');
-        let initialDevice = "tv_01";
-        if (urlDeviceId) {
-            initialDevice = urlDeviceId;
-            // formDeviceId.value = urlDeviceId;
-            // labelDevice.textContent = urlDeviceId;            
-        }
+        let initialDevice = urlDeviceId || "tv_01";
 
         //dong bo gia tri input va load du lieu
         function setActiveDevice(deviceId) {
@@ -246,9 +257,9 @@
 
         //them tv moi vao danh sach
         async function addNewDevice() {
-            const newId = newDeviceIdInput.value.trim();
-            const group = newDeviceGroupInput.value.trim() || 'tv';
-            const displayName = newDeviceNameInput.value.trim() || newId;
+            const newId = document.getElementById('newDeviceIdInput').value.trim();
+            const group = document.getElementById('newDeviceGroupInput').value.trim() || 'tv';
+            const displayName = document.getElementById('newDeviceNameInput').value.trim() || newId;
             
             if (!newId) {
                 alert('Vui lòng nhập thiết bị mới!');
@@ -261,9 +272,9 @@
                 const result = await response.json();
 
                 if (result.success !== false) {
-                    newDeviceIdInput.value = ''; //xoa o nhap
-                    newDeviceGroupInput.value = '';
-                    newDeviceNameInput.value = '';
+                    document.getElementById('newDeviceIdInput').value = ''; //xoa o nhap
+                    document.getElementById('newDeviceGroupInput').value = '';
+                    document.getElementById('newDeviceNameInput').value = '';
                     await loadDeviceList();
                     setActiveDevice(newId); //chuyen sang trang quan ly tv vua tao
                 } else {
@@ -330,8 +341,7 @@
                 const deviceObj = rawDevicesData[devId];
                 // Chỉ lấy group nếu là thiết bị hợp lệ có chứa thuộc tính playlist
                 if (deviceObj && !Array.isArray(deviceObj) && Array.isArray(deviceObj.playlist)) {
-                    const group = deviceObj.group || 'DEFAULT';
-                    groups.add(group);
+                    groups.add(deviceObj.group || 'DEFAULT');
                 }
                 // Tìm các tiền tố (prefix) trước dấu gạch dưới _, ví dụ: "tang1", "tang2", "sanh"
                 // if (id.includes('_')) {
@@ -378,12 +388,7 @@
                 const matchesSearch = devId.toLowerCase().includes(searchKey) || displayName.toLowerCase().includes(searchKey);
                 
                 // Kiểm tra thuộc tính tầng lưu ẩn
-                let matchesGroup = true;
-                if (selectedGroup !== 'ALL') {
-                    // matchesGroup = devId.toUpperCase().startsWith(selectedGroup + '_') || devId.toUpperCase() === selectedGroup;
-                    // Lọc theo thuộc tính group ẩn thay vì cắt chuỗi tên ID
-                    matchesGroup = (groupName === selectedGroup);
-                }
+                let matchesGroup = (selectedGroup === 'ALL' || groupName === selectedGroup);
 
                 return matchesSearch && matchesGroup;
             });
@@ -436,31 +441,35 @@
                 tbody.innerHTML = '';
 
                     if (!result.items || result.items.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="5" class="py-6 text-center text-slate-400 dark:text-slate-300 italic">Chưa có quảng cáo cho thiết bị </td></tr>'; 
+                        tbody.innerHTML = '<tr><td colspan="6" class="py-6 text-center text-slate-400 dark:text-slate-300 italic">Chưa có quảng cáo cho thiết bị </td></tr>'; 
                         return;
                     }
                     result.items.forEach(item => {
                         const isHidden = item.isHidden === true;
+                        const originBadge = item.origin === 'admin_shared' 
+                        ? '<span class="bg-purple-100 dark:bg-purple-950 text-purple-600 dark:text-purple-300 px-2 py-0.5 rounded text-[10px] font-bold">Chung (Admin)</span>'
+                        : '<span class="bg-orange-100 dark:bg-orange-950 text-orange-600 dark:text-orange-300 px-2 py-0.5 rounded text-[10px] font-bold">Riêng (Manager)</span>';
 
                         const tr = document.createElement('tr');
                         tr.className = "hover:bg-slate-50 dark:hover:bg-[#0F828C]/10 transition border-b border-slate-100 dark:border-[#0F828C]/20";
                         tr.innerHTML = `
                             <td class="py-3 px-4 text-slate-500 dark:text-cyan-200 font-mono text-xs">${item.id}</td>
                             <td class="py-3 px-4 text-slate-800 dark:text-white font-medium">${item.title || ''}</td>
+                            <td class="py-3 px-4">${originBadge}</td>
                             <td class="py-3 px-4">
-                                <span class="px-2.5 py-1 rounded-md text-xs font-bold ${item.type.toUpperCase() === 'VIDEO' 
-                                ? 'bg-blue-50 dark:bg-cyan-950 text-blue-600 dark:text-cyan-300 border border-blue-200 dark:border-cyan-700'
-                                : 'bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700'}">
+                                <span class="px-2 py-0.5 rounded-md text-[10px] font-bold ${item.type.toUpperCase() === 'VIDEO' 
+                                ? 'bg-blue-50 dark:bg-cyan-950 text-blue-600 dark:text-cyan-300' 
+                                : 'bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-300'}">
                                     ${item.type.toUpperCase()}
                                 </span>
                             </td>
                             <td class="py-3 px-4 text-slate-600 dark:text-cyan-100">${item.duration}</td>
                             <td class="py-3 px-4 text-center space-x-2">
-                                <button class="px-3 py-1.5 rounded-lg text-xs font-medium transition text-white ${isHidden ? 'bg-slate-400 hover:bg-slate-500' : 'bg-[#A3DC9A] dark:bg-emerald-600 hover:bg-[#92cb87] dark:hover:bg-emerald-500 text-slate-900 dark:text-white font-semibold'}"
+                                <button class="px-2.5 py-1 rounded-lg text-xs font-medium transition text-white ${isHidden ? 'bg-slate-400 hover:bg-slate-500' : 'bg-[#A3DC9A] dark:bg-emerald-600 hover:bg-[#92cb87] dark:hover:bg-emerald-500 text-slate-900 dark:text-white font-semibold'}"
                                     onclick="toggleAdVisibility('${deviceId}', '${item.id}', ${isHidden})">
                                     ${isHidden ? 'Đang ẩn' : 'Đang hiện'}
                                 </button>
-                                <button class="bg-red-50 dark:bg-red-600/30 hover:bg-red-100 dark:hover:bg-red-600/40 text-red-600 dark:text-red-300 border border-red-200 dark:border-red-500/30 px-3 py-1.5 rounded-lg text-xs transition"
+                                <button class="bg-red-50 dark:bg-red-600/30 hover:bg-red-100 dark:hover:bg-red-600/40 text-red-600 dark:text-red-300 border border-red-200 dark:border-red-500/30 px-2.5 py-1 rounded-lg text-xs transition"
                                 onclick="deletePlaylistItem('${deviceId}', '${item.id}')">Xoá</button>
                             </td>
                         `;
@@ -498,6 +507,110 @@
             }
         }
 
+        async function uploadMediaToPool(event) {
+            event.preventDefault();
+            const formElement = document.getElementById('uploadMediaPoolForm');
+            const formData = new FormData(formElement);
+
+            try {
+                const response = await fetch('/api/media-library/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    // Reset form sau khi upload thành công
+                    formElement.reset();
+                    // Tải lại danh sách thư viện media chung để hiển thị tệp mới
+                    await loadMediaPool();
+                } else {
+                    alert(result.message || 'Không thể tải tệp lên thư viện chung');
+                }
+            } catch (err) {
+                console.error('Lỗi khi tải tệp lên kho chung:', err);
+                alert('Có lỗi xảy ra khi kết nối server');
+            }
+        }
+
+        async function loadMediaPool() {
+            try {
+                const response = await fetch('/api/media-library');
+                const result = await response.json();
+
+                mediaPoolContainer.innerHTML = '';
+                if (!result.mediaLibrary || result.mediaLibrary.length === 0) {
+                    mediaPoolContainer.innerHTML = '<p class="text-xs text-slate-400 italic">Thư viện chung chưa có tệp nào.</p>';
+                    return;
+                }
+
+                result.mediaLibrary.forEach(media => {
+                    const div = document.createElement('div');
+                    div.className = 'flex items-center justify-between text-xs bg-slate-50 dark:bg-[#031118]/40 p-2 rounded-xl border border-slate-200 dark:border-[#0F828C]/20 transition mb-2';
+                    div.innerHTML = `
+                        <label class="flex items-center space-x-2 cursor-pointer truncate flex-1 mr-2">
+                            <input type="checkbox" name="mediaPoolCheck" value="${media.id}" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                            <span class="truncate text-slate-700 dark:text-slate-200 font-medium">${media.title}</span>
+                            <span class="ml-2 text-[10px] uppercase bg-cyan-100 dark:bg-cyan-900 text-cyan-700 dark:text-cyan-300 px-1.5 py-0.5 rounded">${media.type}</span>
+                        </label>
+                        <button class="bg-red-50 dark:bg-red-500/20 hover:bg-red-100 dark:hover:bg-red-500/30 text-red-600 dark:text-red-300 border border-red-200 dark:border-red-500/30 px-2 py-1 rounded-lg text-[10px] transition" 
+                        onclick="deleteMediaFromPool('${media.id}')">Xoá</button>
+                    `;
+                    mediaPoolContainer.appendChild(div);
+                });
+            } catch (err) {
+                console.error('Lỗi tải thư viện media', err);
+            }
+        }
+
+        async function addSelectedMediaToPlaylist() {
+            const deviceId = formDeviceId.value;
+            const checkboxes = document.querySelectorAll('input[name="mediaPoolCheck"]:checked');
+            
+            if (checkboxes.length === 0) {
+                alert('Vui lòng chọn ít nhất một tệp từ thư viện chung!');
+                return;
+            }
+
+            for (const cb of checkboxes) {
+                try {
+                    await fetch('/api/playlist/add-from-pool', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ deviceId, mediaIdFromPool: cb.value })
+                    });
+                } catch (e) {
+                    console.error("Lỗi khi thêm tệp từ pool", e);
+                }
+            }
+
+            loadPlaylist(deviceId);
+            loadDeviceList();
+            // Bỏ chọn checkbox sau khi thêm
+            checkboxes.forEach(cb => cb.checked = false);
+        }
+
+        // Hàm gửi request xóa tệp khỏi kho chung
+        async function deleteMediaFromPool(mediaId) {
+            if (!confirm('Bạn có chắc chắn muốn xoá tệp này khỏi kho Media chung?')) return;
+
+            try {
+                const response = await fetch(`/api/media-library/${mediaId}`, {
+                    method: 'DELETE'
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    loadMediaPool(); // Tải lại danh sách thư viện chung
+                } else {
+                    alert(result.message || 'Không thể xoá tệp');
+                }
+            } catch (err) {
+                console.error('Lỗi khi xoá tệp khỏi kho chung', err);
+                alert('Có lỗi xảy ra khi kết nối server');
+            }
+        }
+
         //xoa thiet bi tv
         async function deleteDevice(deviceId) {
             if (!confirm(`Bạn có chắc chắn muốn xoá "${deviceId}"? Toàn bộ playlist của thiết bị này cũng sẽ mất`)) {
@@ -512,14 +625,12 @@
                     await loadDeviceList();
                     //neu thiet bi dang chon bi xoa, tu dong chuyen ve thiet bi dau tien
                     if ( formDeviceId.value === deviceId) {
-                        const resDevices = await fetch('/api/devices');
-                        const dataDevices = await resDevices.json();
-                        const remainingKeys = Object.keys(dataDevices.devices || {});
+                        const remainingKeys = Object.keys(rawDevicesData).filter(k => rawDevicesData[k]?.playlist);
 
                         if (remainingKeys.length > 0) {
-                            // setActiveDevice(remainingKeys[0]);
+                            setActiveDevice(remainingKeys[0]);
                             //neu con thiet bi, chuyen sang thiet bi dau tien
-                            window.location.href = `/?deviceId=${remainingKeys[0]}`;
+                            //window.location.href = `/?deviceId=${remainingKeys[0]}`;
                         } else {
                             //neu het thiet bi, chuyen ve trang chu
                             // setActiveDevice('tv_01');
@@ -589,7 +700,11 @@
         }
 
         //khoi chay khi load trang
-        setActiveDevice(initialDevice);
+        //setActiveDevice(initialDevice);
+        loadMediaPool();
+        loadDeviceList().then(() => {
+            setActiveDevice(initialDevice);
+        });
     </script>    
 </body>
 </html>

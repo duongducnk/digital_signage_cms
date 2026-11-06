@@ -140,15 +140,18 @@ async function readAllPlaylist() { //doc toan bo playlist
             const data = await fs.promises.readFile(playlistFilePath, 'utf8');
             const parsed = JSON.parse(data);
 
-            if (Array.isArray(parsed.items)) {
-                return { devices: { 'default_tv': { group: "tv", displayName: "default", playlist: parsed.items } } };
-            }
+            if (!parsed.mediaLibrary) parsed.mediaLibrary = [];
+            if (!parsed.devices) parsed.devices = {};
+            // if (Array.isArray(parsed.items)) {
+            //     return { devices: { 'default_tv': { group: "tv", displayName: "default", playlist: parsed.items } } };
+            // }
             return parsed; //parsed.devices && parsed.deviceId ? parsed.devices[deviceId] : [];
         }
     } catch (error) {
         console.error("Loi khi doc file playlist.json", error);
     }
-    return { devices: {} }; //tra ve mang rong neu khong co file hoac file loi
+    // return { devices: {} }; //tra ve mang rong neu khong co file hoac file loi
+    return { mediaLibrary: [], devices: {} };
 }
 
 async function readPlaylist(deviceId) {
@@ -205,37 +208,54 @@ async function savePlaylist(deviceId, items) {
     }
 }
 
+// API lấy kho Media chung (Media Pool)
+app.get('/api/media-library', requireAuth, async (req, res) => {
+    const parsed = await readAllPlaylist();
+    res.json({ success: true, mediaLibrary: parsed.mediaLibrary || [] });
+});
+
+// API Admin upload tệp trực tiếp vào kho Media chung
+app.post('/api/media-library/upload', requireAuth, requireAdmin, upload.single('mediaFile'), async (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ success: false, message: 'Không có file được tải lên' });
+    }
+
+    const fileType = req.file.mimetype.startsWith('video') ? 'video' : 'image';
+    const serverIp = getLocalIpAddress();
+    const fileUrl = `http://${serverIp}:${PORT}/media/${req.file.filename}`;
+
+    const newMedia = {
+        id: 'media_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+        title: req.body.title || req.file.originalname,
+        type: fileType,
+        url: fileUrl,
+        duration: fileType === 'image' ? parseInt(req.body.duration || 10, 10) : 0
+    };
+
+    let parsed = await readAllPlaylist();
+    if (!parsed.mediaLibrary) parsed.mediaLibrary = [];
+    parsed.mediaLibrary.push(newMedia);
+
+    await fs.promises.writeFile(playlistFilePath, JSON.stringify(parsed, null, 2), 'utf8');
+    res.json({ success: true, media: newMedia });
+});
 
 //tra ve cau truc json chua link ads
 app.get('/api/playlist', async (req, res) => {  //tra ve playlist
     const deviceId = req.query.deviceId; //lay id tv tu client
-    const group = req.query.group;
-    const displayName = req.query.displayName;
     const forAdmin = req.query.admin === 'true';
 
     if (!deviceId) {
         return res.status(400).json({ success: false, message: "Thiếu tham số deviceId"});
     }
 
-    const parsed = await readAllPlaylist(); //neu chua co tv trong he thong, tao tv moi
-    if (!parsed.devices) {
-        //await savePlaylist(deviceId, []);
-        parsed.devices = {};
-    }
+    const parsed = await readAllPlaylist(); 
 
     // Nếu TV chưa tồn tại, khởi tạo mới với đầy đủ group và displayName người dùng truyền vào
-    if (!parsed.devices[deviceId] || Array.isArray(parsed.devices[deviceId])) {
-        const existingPlaylist = Array.isArray(parsed.devices[deviceId]) ? parsed.devices[deviceId] : [];
-        parsed.devices[deviceId] = {
-            group: group || "tv",
-            displayName: displayName || deviceId,
-            playlist: existingPlaylist
-        };
-        await fs.promises.writeFile(playlistFilePath, JSON.stringify(parsed, null, 2), 'utf8');
-    } else {
-        // Nếu đã tồn tại nhưng người dùng có truyền cập nhật group/displayName mới khi tạo lại
-        if (group) parsed.devices[deviceId].group = group;
-        if (displayName) parsed.devices[deviceId].displayName = displayName;
+    if (!parsed.devices || !parsed.devices[deviceId]) {
+        const group = req.query.group || "tv";
+        const displayName = req.query.displayName || deviceId;
+        parsed.devices[deviceId] = { group, displayName, playlist: [] };
         await fs.promises.writeFile(playlistFilePath, JSON.stringify(parsed, null, 2), 'utf8');
     }
 
@@ -245,7 +265,7 @@ app.get('/api/playlist', async (req, res) => {  //tra ve playlist
     const finalPlaylist = forAdmin ? playlist : playlist.filter(item => item.isHidden !== true);
 
     res.json({  
-        success :true,
+        success: true,
         deviceId: deviceId,
         items: finalPlaylist
     });
@@ -267,15 +287,59 @@ app.get('/', (req, res) => {
 
 //xu ly upload va them vao playlist
 app.post('/upload', requireAuth, upload.single('mediaFile'), async (req, res) => {
-    if (!req.file) {
-        return res.status(400).send('Không có file được tải lên');
-    }
+    // if (!req.file) {
+    //     return res.status(400).send('Không có file được tải lên');
+    // }
 
     const deviceId = req.body.deviceId;
+    const mediaIdFromPool = req.body.mediaIdFromPool; // Nếu chọn từ kho chung
+
     if (!deviceId) {
         return res.status(400).send('Thiếu mã thiết bị (deviceId)');
     }
-    const fileType = req.file.mimetype.startsWith('video') ? 'video' : 'image';
+
+    let newItem = null;
+    let parsed = await readAllPlaylist();
+
+    if (mediaIdFromPool) {
+        // Lấy tệp từ kho Media Pool chung của Admin
+        const mediaFound = parsed.mediaLibrary.find(m => m.id === mediaIdFromPool);
+        if (mediaFound) {
+            newItem = {
+                id: Date.now() + '-' + Math.floor(Math.random() * 1000),
+                mediaId: mediaFound.id,
+                title: mediaFound.title,
+                type: mediaFound.type,
+                url: mediaFound.url,
+                duration: mediaFound.duration,
+                isHidden: false,
+                origin: 'admin_shared', // Nguồn gốc từ Admin
+                canDelete: false        // Manager không được xóa tệp này khỏi playlist
+            };
+        }
+    }
+
+    if (!newItem && req.file) {
+        // Manager tự upload tệp custom riêng cho thiết bị
+        const fileType = req.file.mimetype.startsWith('video') ? 'video' : 'image';
+        const serverIp = getLocalIpAddress();
+        const fileUrl = `http://${serverIp}:${PORT}/media/${req.file.filename}`;
+
+        newItem = {
+            id: Date.now() + '-' + Math.floor(Math.random() * 1000),
+            title: req.body.title || req.file.originalname,
+            type: fileType,
+            url: fileUrl,
+            duration: fileType === 'image' ? parseInt(req.body.duration || 10, 10) : 0,
+            isHidden: false,
+            origin: 'manager_custom', // Nguồn gốc tự upload
+            canDelete: true           // Manager có toàn quyền xóa
+        };
+    }
+
+    if (!newItem) {
+        return res.status(400).send('Không có tệp nào được chọn hoặc tải lên');
+    }
 
     //nhan dien url theo moi truong may ao hoac mang LAN
     //o day mac dinh cau hinh url tro ve localhost
@@ -285,14 +349,14 @@ app.post('/upload', requireAuth, upload.single('mediaFile'), async (req, res) =>
     const serverIp = getLocalIpAddress();
     const fileUrl = `http://${serverIp}:${PORT}/media/${req.file.filename}`;
 
-    const newItem = {
-        id: Date.now() + '-' + Math.floor(Math.random() * 1000),
-        title: req.body.title || req.file.originalname,
-        type: fileType,
-        url: fileUrl,
-        duration: fileType === 'image' ? parseInt(req.body.duration || 10, 10) : 0,
-        isHidden: false
-    };
+    // const newItem = {
+    //     id: Date.now() + '-' + Math.floor(Math.random() * 1000),
+    //     title: req.body.title || req.file.originalname,
+    //     type: fileType,
+    //     url: fileUrl,
+    //     duration: fileType === 'image' ? parseInt(req.body.duration || 10, 10) : 0,
+    //     isHidden: false
+    // };
 
     //doc, them, luu vao playlist cua deviceId
     let playlist = await readPlaylist(deviceId);
@@ -317,6 +381,75 @@ app.post('/upload', requireAuth, upload.single('mediaFile'), async (req, res) =>
     const redirectPath = req.session.user.role === 'admin' ? '/' : '/manager.html';
 
     res.redirect(`${redirectPath}?deviceId=${deviceId}`);
+});
+
+// API Thêm tệp từ Thư viện chung vào Playlist của TV
+app.post('/api/playlist/add-from-pool', requireAuth, async (req, res) => {
+    const { deviceId, mediaIdFromPool } = req.body;
+    if (!deviceId || !mediaIdFromPool) {
+        return res.status(400).json({ success: false, message: "Thiếu thông tin thiết bị hoặc mã media" });
+    }
+
+    let parsed = await readAllPlaylist();
+    if (!parsed.mediaLibrary) parsed.mediaLibrary = [];
+
+    const mediaFound = parsed.mediaLibrary.find(m => m.id === mediaIdFromPool);
+    if (!mediaFound) {
+        return res.status(404).json({ success: false, message: "Không tìm thấy tệp trong thư viện chung" });
+    }
+
+    const newItem = {
+        id: Date.now() + '-' + Math.floor(Math.random() * 1000),
+        mediaId: mediaFound.id,
+        title: mediaFound.title,
+        type: mediaFound.type,
+        url: mediaFound.url,
+        duration: mediaFound.duration,
+        isHidden: false,
+        origin: 'admin_shared', // Nguồn gốc từ Admin
+        canDelete: false        // Không cho phép xóa trực tiếp nếu không phải quyền tối cao
+    };
+
+    let playlist = await readPlaylist(deviceId);
+    if (!Array.isArray(playlist)) playlist = [];
+    playlist.push(newItem);
+    await savePlaylist(deviceId, playlist);
+
+    res.json({ success: true, message: "Đã thêm tệp vào playlist thành công" });
+});
+
+// API Xóa tệp khỏi kho Media chung (Chỉ Admin)
+app.delete('/api/media-library/:id', requireAuth, requireAdmin, async (req, res) => {
+    const mediaId = req.params.id;
+    let parsed = await readAllPlaylist();
+
+    if (!parsed.mediaLibrary) parsed.mediaLibrary = [];
+
+    const mediaIndex = parsed.mediaLibrary.findIndex(m => m.id === mediaId);
+    if (mediaIndex === -1) {
+        return res.status(404).json({ success: false, message: "Không tìm thấy tệp trong kho chung" });
+    }
+
+    const mediaToDelete = parsed.mediaLibrary[mediaIndex];
+
+    // Xóa file vật lý trong thư mục media
+    try {
+        const filename = mediaToDelete.url ? mediaToDelete.url.split('/media/')[1] : null;
+        if (filename) {
+            const filePath = path.join(mediaDir, filename);
+            if (fs.existsSync(filePath)) {
+                await fs.promises.unlink(filePath);
+            }
+        }
+    } catch (e) {
+        console.error("Không thể xoá file vật lý của media pool", e);
+    }
+
+    // Xóa khỏi danh sách mediaLibrary
+    parsed.mediaLibrary.splice(mediaIndex, 1);
+
+    await fs.promises.writeFile(playlistFilePath, JSON.stringify(parsed, null, 2), 'utf8');
+    res.json({ success: true, message: "Đã xóa tệp khỏi kho chung thành công" });
 });
 
 //an hien quang cao
@@ -346,14 +479,24 @@ app.post('/api/toggle-ad', requireAuth, async (req, res) => {
     }
 });
 
-//xoa muc khoi playlist
-app.delete('/api/playlist/:deviceId/:id', requireAdmin, async (req, res) => {
+// API Xóa tệp khỏi playlist (Kiểm tra quyền hạn: admin xóa tất cả, manager chỉ xóa tệp manager_custom)
+app.delete('/api/playlist/:deviceId/:id', requireAuth, async (req, res) => {
     const { deviceId, id } = req.params;
+    const userRole = req.session.user.role;
     let playlist = await readPlaylist(deviceId);
 
     //tim item trong playlist de lay ten file
     const itemToDelete = playlist.find(item => item.id === id);
-    if (itemToDelete) {
+    if (!itemToDelete) {
+        return res.status(404).json({ success: false, message: "Không tìm thấy tệp" });
+    }
+    // Phân quyền: Manager không được xóa tệp có nguồn gốc admin_shared
+    if (userRole !== 'admin' && itemToDelete.origin === 'admin_shared') {
+        return res.status(403).json({ success: false, message: "Bạn không có quyền xóa tệp này" });
+    }
+
+    // Nếu là tệp do manager tự upload hoặc admin xóa, có thể dọn dẹp file vật lý nếu không nằm trong mediaLibrary
+    if (itemToDelete.origin === 'manager_custom') {
         try {
             //trich xuat ten file tu url de xoa trong /media
             const filename = itemToDelete.url ? itemToDelete.url.split('/media/')[1] : null;
@@ -391,16 +534,18 @@ app.delete('/api/delete-device/:deviceId', requireAdmin, async (req, res) => {
         const items = Array.isArray(devData) ? devData : (devData?.playlist || []);
 
         for (const item of items) {
-            try {
-                const filename = item.url ? item.url.split('/media/')[1] : null;
-                if (filename) {
-                    const filePath = path.join(mediaDir, filename);
-                    if (fs.existsSync(filePath)) {
-                        await fs.promises.unlink(filePath);
+            if (item.origin === 'manager_custom') {
+                try {
+                    const filename = item.url ? item.url.split('/media/')[1] : null;
+                    if (filename) {
+                        const filePath = path.join(mediaDir, filename);
+                        if (fs.existsSync(filePath)) {
+                            await fs.promises.unlink(filePath);
+                        }
                     }
+                } catch (e) {
+                    console.error("Lỗi xóa file của thiết bị", e);
                 }
-            } catch (e) {
-                console.error("Lỗi xóa file của thiết bị", e);
             }
         }
 
