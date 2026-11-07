@@ -20,34 +20,67 @@
           "duration": 0,
           "isHidden": false
         }
-      ]
-    },
-    "tv_01": {
-      "group": "tv",
-      "displayName": "01",
-      "playlist": []
+      ],
+      "scheduledPlaylist": {
+        "enabled": false,
+        "items": [
+          {
+            "id": "sched_1794013298009_568",
+            "mediaId": "media_1793954408292_893",
+            "title": "hi3.png",
+            "type": "image",
+            "url": "http://192.168.23.153:3000/media/1793954408285-hi3.png",
+            "duration": 10,
+            "isHidden": false,
+            "origin": "admin_shared"
+          }
+        ]
+      }
     },
     "duoc1": {
       "group": "Tầng 1",
       "displayName": "TV Dược trái",
-      "playlist": []
+      "playlist": [],
+      "scheduledPlaylist": {
+        "enabled": false,
+        "items": []
+      }
     },
     "khamyc1": {
       "group": "Tầng 2",
       "displayName": "TV bên trái lễ tân khám yêu cầu",
-      "playlist": []
+      "playlist": [],
+      "scheduledPlaylist": {
+        "enabled": false,
+        "items": []
+      }
     },
     "khamyc2": {
       "group": "Tầng 2",
       "displayName": "TV bên phải lễ tân khám yêu cầu",
-      "playlist": []
+      "playlist": [],
+      "scheduledPlaylist": {
+        "enabled": false,
+        "items": []
+      }
     },
     "test": {
       "group": "tang 3",
       "displayName": "ab",
       "playlist": [
         {
-          "id": "1793955874891-587",
+          "id": "1794013241171-202",
+          "mediaId": "media_1793954413397_672",
+          "title": "sample_10s_720p.mp4",
+          "type": "video",
+          "url": "http://192.168.23.153:3000/media/1793954413380-sample_10s_720p.mp4",
+          "duration": 0,
+          "isHidden": false,
+          "origin": "admin_shared",
+          "canDelete": false
+        },
+        {
+          "id": "1794015092290-31",
           "mediaId": "media_1793954408292_893",
           "title": "hi3.png",
           "type": "image",
@@ -57,7 +90,37 @@
           "origin": "admin_shared",
           "canDelete": false
         }
-      ]
+      ],
+      "scheduledPlaylist": {
+        "enabled": false,
+        "title": "Lịch phát hẹn giờ",
+        "startTime": "2026-11-02T14:30",
+        "endTime": "2020-08-25T10:23",
+        "items": [
+          {
+            "id": "sched_1794015172113_23",
+            "mediaId": "media_1793954408292_893",
+            "title": "hi3.png",
+            "type": "image",
+            "url": "http://192.168.23.153:3000/media/1793954408285-hi3.png",
+            "duration": 10,
+            "isHidden": false,
+            "origin": "admin_shared"
+          }
+        ]
+      }
+    },
+    "duoc2": {
+      "group": "Tầng 1",
+      "displayName": "TV dược phải",
+      "playlist": [],
+      "scheduledPlaylist": {
+        "enabled": false,
+        "title": "Lịch phát hẹn giờ",
+        "startTime": "",
+        "endTime": "",
+        "items": []
+      }
     }
   },
   "mediaLibrary": [
