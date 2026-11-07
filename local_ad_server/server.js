@@ -255,19 +255,29 @@ app.get('/api/playlist', async (req, res) => {  //tra ve playlist
     if (!parsed.devices || !parsed.devices[deviceId]) {
         const group = req.query.group || "tv";
         const displayName = req.query.displayName || deviceId;
-        parsed.devices[deviceId] = { group, displayName, playlist: [] };
+        parsed.devices[deviceId] = { group, displayName, playlist: [], scheduledPlaylist: { enabled: false, items: [] } };
         await fs.promises.writeFile(playlistFilePath, JSON.stringify(parsed, null, 2), 'utf8');
     }
 
-    let playlist = await readPlaylist(deviceId);
+    //let playlist = await readPlaylist(deviceId);
+    const deviceObj = parsed.devices[deviceId];
+    let playlist = Array.isArray(deviceObj) ? deviceObj : (deviceObj.playlist || []);
+    let scheduledPlaylist = deviceObj.scheduledPlaylist || { enabled: false, items: [] };
 
     //neu la admin thi tra ve toan bo playlist, neu la tv thi loc bo item an
     const finalPlaylist = forAdmin ? playlist : playlist.filter(item => item.isHidden !== true);
-
+    const finalScheduledItems = forAdmin ? scheduledPlaylist.items : scheduledPlaylist.items.filter(item => item.isHidden !== true);
+    
     res.json({  
         success: true,
         deviceId: deviceId,
-        items: finalPlaylist
+        group: deviceObj.group || "tv",
+        displayName: deviceObj.displayName || deviceId,
+        items: finalPlaylist, // Playlist chính
+        scheduledPlaylist: {  // Playlist phụ hẹn giờ kèm theo
+            ...scheduledPlaylist,
+            items: finalScheduledItems
+        }
     });
 });
 
@@ -564,6 +574,182 @@ app.delete('/api/delete-device/:deviceId', requireAdmin, async (req, res) => {
     res.json({ success: true });
 });
 
+// API Cập nhật hoặc Bật/Tắt lịch phát phụ (Scheduled Playlist) cho thiết bị (Chỉ Admin)
+app.post('/api/device/schedule', requireAuth, requireAdmin, async (req, res) => {
+    const { deviceId, enabled, title, startTime, endTime, items } = req.body;
+    
+    if (!deviceId) {
+        return res.status(400).json({ success: false, message: "Thiếu mã thiết bị (deviceId)" });
+    }
+
+    let parsed = await readAllPlaylist();
+    if (!parsed.devices || !parsed.devices[deviceId]) {
+        return res.status(404).json({ success: false, message: "Không tìm thấy thiết bị" });
+    }
+
+    // Đảm bảo cấu trúc thiết bị là object chuẩn, không phải mảng cũ
+    let deviceObj = parsed.devices[deviceId];
+    if (Array.isArray(deviceObj)) {
+        deviceObj = { group: "tv", displayName: deviceId, playlist: deviceObj };
+        parsed.devices[deviceId] = deviceObj;
+    }
+
+    // Cập nhật cấu hình scheduledPlaylist
+    deviceObj.scheduledPlaylist = {
+        enabled: enabled !== undefined ? Boolean(enabled) : false,
+        title: title || "Lịch phát hẹn giờ",
+        startTime: startTime || "", // Định dạng: "YYYY-MM-DDTHH:mm"
+        endTime: endTime || "",     // Định dạng: "YYYY-MM-DDTHH:mm"
+        items: Array.isArray(items) ? items : (deviceObj.scheduledPlaylist?.items || [])
+    };
+
+    try {
+        await fs.promises.writeFile(playlistFilePath, JSON.stringify(parsed, null, 2), 'utf8');
+        res.json({ 
+            success: true, 
+            message: "Cập nhật lịch hẹn giờ thành công", 
+            scheduledPlaylist: deviceObj.scheduledPlaylist 
+        });
+    } catch (error) {
+        console.error("Lỗi khi ghi file lịch hẹn giờ:", error);
+        res.status(500).json({ success: false, message: "Lỗi hệ thống khi lưu lịch" });
+    }
+});
+
+// API Thêm tệp vào Playlist phụ hẹn giờ của thiết bị (Hỗ trợ cả chọn từ kho chung và upload custom)
+app.post('/api/scheduled-playlist/add', requireAuth, upload.single('mediaFile'), async (req, res) => {
+    const { deviceId, mediaIdFromPool } = req.body;
+    
+    if (!deviceId) {
+        return res.status(400).json({ success: false, message: "Thiếu mã thiết bị (deviceId)" });
+    }
+
+    let parsed = await readAllPlaylist();
+    if (!parsed.devices || !parsed.devices[deviceId]) {
+        return res.status(404).json({ success: false, message: "Không tìm thấy thiết bị" });
+    }
+
+    let deviceObj = parsed.devices[deviceId];
+    if (Array.isArray(deviceObj)) {
+        deviceObj = { group: "tv", displayName: deviceId, playlist: deviceObj, scheduledPlaylist: { enabled: false, items: [] } };
+        parsed.devices[deviceId] = deviceObj;
+    }
+
+    if (!deviceObj.scheduledPlaylist) {
+        deviceObj.scheduledPlaylist = { enabled: false, items: [] };
+    }
+
+    let newItem = null;
+
+    // Trường hợp 1: Chọn từ Kho Media chung (Media Pool)
+    if (mediaIdFromPool) {
+        const mediaFound = (parsed.mediaLibrary || []).find(m => m.id === mediaIdFromPool);
+        if (mediaFound) {
+            newItem = {
+                id: 'sched_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+                mediaId: mediaFound.id,
+                title: mediaFound.title,
+                type: mediaFound.type,
+                url: mediaFound.url,
+                duration: mediaFound.duration,
+                isHidden: false,
+                origin: 'admin_shared'
+            };
+        }
+    } 
+    // Trường hợp 2: Tải lên tệp mới trực tiếp
+    else if (req.file) {
+        const fileType = req.file.mimetype.startsWith('video') ? 'video' : 'image';
+        const serverIp = getLocalIpAddress();
+        const fileUrl = `http://${serverIp}:${PORT}/media/${req.file.filename}`;
+
+        newItem = {
+            id: 'sched_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+            title: req.body.title || req.file.originalname,
+            type: fileType,
+            url: fileUrl,
+            duration: fileType === 'image' ? parseInt(req.body.duration || 10, 10) : 0,
+            isHidden: false,
+            origin: req.session.user.role === 'admin' ? 'admin_shared' : 'manager_custom'
+        };
+    }
+
+    if (!newItem) {
+        return res.status(400).json({ success: false, message: "Không có tệp nào được chọn hoặc tải lên" });
+    }
+
+    if (!Array.isArray(deviceObj.scheduledPlaylist.items)) {
+        deviceObj.scheduledPlaylist.items = [];
+    }
+
+    deviceObj.scheduledPlaylist.items.push(newItem);
+
+    try {
+        await fs.promises.writeFile(playlistFilePath, JSON.stringify(parsed, null, 2), 'utf8');
+        
+        // Phản hồi linh hoạt tùy theo kiểu gọi (Fetch JSON hay Form Redirect)
+        if (req.headers['content-type'] && req.headers['content-type'].includes('application/json')) {
+            return res.json({ success: true, message: "Đã thêm tệp vào playlist hẹn giờ", scheduledPlaylist: deviceObj.scheduledPlaylist });
+        }
+        
+        const redirectPath = req.session.user.role === 'admin' ? '/' : '/manager.html';
+        res.redirect(`${redirectPath}?deviceId=${deviceId}`);
+    } catch (error) {
+        console.error("Lỗi ghi file khi thêm tệp vào lịch hẹn giờ:", error);
+        res.status(500).json({ success: false, message: "Lỗi hệ thống khi lưu dữ liệu" });
+    }
+});
+
+// API Xóa tệp khỏi Playlist phụ hẹn giờ của thiết bị
+app.delete('/api/playlist/:deviceId/scheduled/:id', requireAuth, async (req, res) => {
+    const { deviceId, id } = req.path || req.params; // Lấy tham số chuẩn từ URL
+    // Lưu ý Express route params: /api/playlist/:deviceId/scheduled/:id
+    const actualDeviceId = req.params.deviceId;
+    const actualId = req.params.id;
+
+    let parsed = await readAllPlaylist();
+    if (!parsed.devices || !parsed.devices[actualDeviceId]) {
+        return res.status(404).json({ success: false, message: "Không tìm thấy thiết bị" });
+    }
+
+    let deviceObj = parsed.devices[actualDeviceId];
+    if (!deviceObj.scheduledPlaylist || !Array.isArray(deviceObj.scheduledPlaylist.items)) {
+        return res.status(404).json({ success: false, message: "Không tìm thấy playlist hẹn giờ" });
+    }
+
+    const itemIndex = deviceObj.scheduledPlaylist.items.findIndex(item => item.id === actualId);
+    if (itemIndex === -1) {
+        return res.status(404).json({ success: false, message: "Không tìm thấy tệp trong lịch hẹn giờ" });
+    }
+
+    const itemToDelete = deviceObj.scheduledPlaylist.items[itemIndex];
+
+    // Nếu là tệp tự tải lên riêng, tiến hành dọn dẹp file vật lý
+    if (itemToDelete.origin === 'manager_custom') {
+        try {
+            const filename = itemToDelete.url ? itemToDelete.url.split('/media/')[1] : null;
+            if (filename) {
+                const filePath = path.join(mediaDir, filename);
+                if (fs.existsSync(filePath)) {
+                    await fs.promises.unlink(filePath);
+                }
+            }
+        } catch (e) {
+            console.error("Không thể xóa file vật lý của lịch hẹn giờ", e);
+        }
+    }
+
+    // Xóa khỏi mảng items của scheduledPlaylist
+    deviceObj.scheduledPlaylist.items.splice(itemIndex, 1);
+
+    try {
+        await fs.promises.writeFile(playlistFilePath, JSON.stringify(parsed, null, 2), 'utf8');
+        res.json({ success: true, message: "Đã xóa tệp khỏi lịch hẹn giờ thành công" });
+    } catch (error) {
+        console.error("Lỗi ghi file khi xóa tệp lịch hẹn giờ:", error);
+        res.status(500).json({ success: false, message: "Lỗi hệ thống khi lưu dữ liệu" });
+    }
+});
 
 // async function generateHash() {
 //     const hash = await bcrypt.hash('123', 10);
