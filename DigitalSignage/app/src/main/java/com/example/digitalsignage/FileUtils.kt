@@ -54,6 +54,62 @@ fun loadPlaylistCache(context: Context): List<AdItem> {
     return list
 }
 
+// Lưu cấu hình lịch hẹn giờ vào cache
+fun saveScheduleCache(context: Context, scheduled: ScheduledPlaylist?) {
+    try {
+        val file = File(context.filesDir, "schedule_cache.json")
+        if (scheduled == null) {
+            if (file.exists()) file.delete()
+            return
+        }
+        val obj = JSONObject().apply {
+            put("enabled", scheduled.enabled)
+            put("startTime", scheduled.startTime)
+            put("endTime", scheduled.endTime)
+            val jsonArray = JSONArray()
+            for (item in scheduled.items) {
+                jsonArray.put(JSONObject().apply {
+                    put("type", item.type)
+                    put("url", item.url)
+                    put("duration", item.duration)
+                })
+            }
+            put("items", jsonArray)
+        }
+        file.writeText(obj.toString())
+    } catch (e: Exception) {
+        e.printStackTrace()
+    }
+}
+
+// Đọc cache lịch hẹn giờ khi mất mạng
+fun loadScheduleCache(context: Context): ScheduledPlaylist? {
+    try {
+        val file = File(context.filesDir, "schedule_cache.json")
+        if (file.exists()) {
+            val jsonString = file.readText()
+            val obj = JSONObject(jsonString)
+            val enabled = obj.getBoolean("enabled")
+            val startTime = obj.getString("startTime")
+            val endTime = obj.getString("endTime")
+            val jsonArray = obj.getJSONArray("items")
+            val items = mutableListOf<AdItem>()
+            for (i in 0 until jsonArray.length()) {
+                val itemObj = jsonArray.getJSONObject(i)
+                items.add(AdItem(
+                    type = itemObj.getString("type"),
+                    url = itemObj.getString("url"),
+                    duration = itemObj.getInt("duration")
+                ))
+            }
+            return ScheduledPlaylist(enabled, startTime, endTime, items)
+        }
+    } catch (e: Exception) {
+        e.printStackTrace()
+    }
+    return null
+}
+
 suspend fun getOrDownloadLocalFile(context: Context, fileUrl: String): String {
     return withContext(Dispatchers.IO) {
         try {
@@ -89,3 +145,32 @@ suspend fun getOrDownloadLocalFile(context: Context, fileUrl: String): String {
         }
     }
 }
+
+// Dọn dẹp các tệp tin cũ không còn nằm trong playlist hiện tại
+fun cleanUnusedFiles(context: Context, activePlaylist: List<AdItem>) {
+    try {
+        val fileDir = context.filesDir
+        if (!fileDir.exists()) return
+
+        // 1. Lấy danh sách tên các tệp đang có trong playlist hiện tại
+        val activeFileNames = activePlaylist.map { item ->
+            item.url.substringAfterLast("/")
+        }.toSet()
+
+        // 2. Duyệt qua toàn bộ tệp trong thư mục lưu trữ nội bộ của app
+        fileDir.listFiles()?.forEach { file ->
+            val fileName = file.name
+
+            // 3. Nếu tệp không phải là file cache playlist VÀ không nằm trong danh sách đang dùng -> Xóa
+            if (fileName != "playlist_cache.json" && !activeFileNames.contains(fileName)) {
+                val deleted = file.delete()
+                if (deleted) {
+                    android.util.Log.d("FileCleanUp", "Đã dọn dẹp tệp không dùng: $fileName")
+                }
+            }
+        }
+    } catch (e: Exception) {
+        e.printStackTrace()
+    }
+}
+

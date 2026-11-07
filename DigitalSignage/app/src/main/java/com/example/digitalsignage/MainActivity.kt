@@ -97,8 +97,8 @@ class MainActivity : ComponentActivity() {
                         }
                     } else {
                         AdsPlayerScreen(
-                            serverBaseUrl = "http://192.168.11.223:3000",
-                            //serverBaseUrl = "http://192.168.22.189:3000",
+                            //serverBaseUrl = "http://192.168.11.223:3000",
+                            serverBaseUrl = "http://192.168.20.203:3000",
                             deviceId = currentDeviceId,
                             onSettingsClick = {
                                 isSettingMode = true //mo lai man hinh cai dat khi can
@@ -144,14 +144,21 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-
+data class ScheduledPlaylist(
+    val enabled: Boolean,
+    val startTime: String,
+    val endTime: String,
+    val items: List<AdItem>
+)
 
 data class  AdItem(val type: String, val url: String, val duration: Int)
 
 //lay chuoi du lieu tu server
-suspend fun fetchPlaylist(urlString: String): List<AdItem> {
+suspend fun fetchPlaylistResponse(urlString: String): Pair<List<AdItem>, ScheduledPlaylist?> {
     return withContext(Dispatchers.IO) {
-        val list = mutableListOf<AdItem>()
+        //val list = mutableListOf<AdItem>()
+        var mainList = listOf<AdItem>()
+        var scheduledData: ScheduledPlaylist? = null
         try {
             val url = URL(urlString)
             val connection = url.openConnection() as HttpURLConnection
@@ -164,20 +171,44 @@ suspend fun fetchPlaylist(urlString: String): List<AdItem> {
             reader.close()
 
             val json = JSONObject(response)
+
+            // 1. Đọc playlist chính
             val items = json.getJSONArray("items")
+            val tempMain = mutableListOf<AdItem>()
             for (i in 0 until items.length()) {
                 val obj = items.getJSONObject(i)
-                list.add(AdItem(
+                tempMain.add(AdItem(
                     type = obj.getString("type"),
                     url = obj.getString("url"),
                     duration = obj.getInt("duration")
                 ))
             }
+            mainList = tempMain
+
+            // 2. Đọc playlist phụ hẹn giờ (nếu có từ server)
+            if (json.has("scheduledPlaylist")) {
+                val schedObj = json.getJSONObject("scheduledPlaylist")
+                val enabled = schedObj.optBoolean("enabled", false)
+                val startTime = schedObj.optString("startTime", "")
+                val endTime = schedObj.optString("endTime", "")
+
+                val schedItemsArray = schedObj.getJSONArray("items")
+                val tempSchedItems = mutableListOf<AdItem>()
+                for (i in 0 until schedItemsArray.length()) {
+                    val obj = schedItemsArray.getJSONObject(i)
+                    tempSchedItems.add(AdItem(
+                        type = obj.getString("type"),
+                        url = obj.getString("url"),
+                        duration = obj.getInt("duration")
+                    ))
+                }
+                scheduledData = ScheduledPlaylist(enabled, startTime, endTime, tempSchedItems)
+            }
         }
         catch (e: Exception) {
             e.printStackTrace()
         }
-        list
+        Pair(mainList, scheduledData)
     }
 }
 
@@ -192,81 +223,142 @@ fun AdsPlayerScreen(
     //tao url dong kem theo deviceId
     val serverUrl = "$serverBaseUrl/api/playlist?deviceId=$deviceId"
 
-    var playlist by remember { mutableStateOf<List<AdItem>>(emptyList()) }
-//    var pendingPlaylist by remember { mutableStateOf<List<AdItem>>(emptyList()) }
+    var mainPlaylist by remember { mutableStateOf<List<AdItem>>(emptyList()) }
+    var scheduledPlaylistState by remember { mutableStateOf<ScheduledPlaylist?>(null) }
+    //var pendingPlaylist by remember { mutableStateOf<List<AdItem>>(emptyList()) }
+
     var currentIndex by remember { mutableIntStateOf(0) }
     var playbackKey by remember { mutableIntStateOf(0) } //khoa tang dan de buoc lam moi player, timer
     var isLoading by remember { mutableStateOf(true) }
 
+    // Biến theo dõi danh sách đang thực tế phát trên màn hình (Playlist chính hay Playlist phụ)
+    var activePlaylistToPlay by remember { mutableStateOf<List<AdItem>>(emptyList()) }
+
     LaunchedEffect(serverUrl) {
         // 1. NGAY KHI KHỞI ĐỘNG: Thử load cache cục bộ lên trước để phát ngay lập tức nếu mất mạng
-        val cachedList = loadPlaylistCache(context)
-        if (cachedList.isNotEmpty()) {
-            playlist = cachedList
+        val cachedMain = loadPlaylistCache(context)
+        val cachedSched = loadScheduleCache(context)
+        if (cachedMain.isNotEmpty()) {
+            mainPlaylist = cachedMain
+            scheduledPlaylistState = cachedSched
             isLoading = false
         }
 
         while (true) {
-            val fetchedList = fetchPlaylist(serverUrl)
-            if (fetchedList.isNotEmpty()) {
-                // Duyệt qua từng item và tải về bộ nhớ cục bộ trước khi phát
-                val localProcessedList = fetchedList.map { item ->
-                    val localPath = getOrDownloadLocalFile(context, item.url)
-                    // Thay thế URL mạng bằng đường dẫn file cục bộ
-                    item.copy(url = localPath)
-                }
-
-                if (localProcessedList != playlist) {
-                    playlist = localProcessedList
-                    isLoading = false
-
-                    // Đảm bảo currentIndex không bị tràn (out of bounds) sau khi cập nhật danh sách mới
-                    if (currentIndex >= playlist.size) {
-                        currentIndex = 0
-                    }
-
-                    // Lưu lại cache mới nhất để phòng lần sau mất mạng
-                    savePlaylistCache(context, localProcessedList)
-                }
-
-//                if (playlist.isEmpty()) { //luc mo app
+            val (fetchedMain, fetchedSched) = fetchPlaylistResponse(serverUrl)
+            if (fetchedMain.isNotEmpty() || fetchedSched != null) {
+//                val localProcessedList = fetchedMain.map { item ->
+//                    val localPath = getOrDownloadLocalFile(context, item.url)
+//                    // Thay thế URL mạng bằng đường dẫn file cục bộ
+//                    item.copy(url = localPath)
+//                }
+//                if (localProcessedList != playlist) {
 //                    playlist = localProcessedList
 //                    isLoading = false
-//                } else {
-//                    //neu dang chay quang cao thi luu vao pendingPlaylist
-//                    //pendingPlaylist = fetchedList
 //
-//                    //cap nhat ngay neu danh sach tu server thay doi so voi hien tai
-//                    //kiem tra bang cach so sanh kich thuoc hoac phan tu dau tien
-//                    if (localProcessedList != playlist) {
-//                        playlist = localProcessedList
-//                        //dam bao currentIndex khong bi tran sau khi cap nhat danh sach
-//                        if (currentIndex >= playlist.size) {
-//                            currentIndex = 0
-//                        }
+//                    // Đảm bảo currentIndex không bị tràn (out of bounds) sau khi cập nhật danh sách mới
+//                    if (currentIndex >= playlist.size) {
+//                        currentIndex = 0
 //                    }
+//
+//                    // Lưu lại cache mới nhất để phòng lần sau mất mạng
+//                    savePlaylistCache(context, localProcessedList)
+//
+//                    // Dọn dẹp tệp thừa
+//                    cleanUnusedFiles(context, localProcessedList)
 //                }
-            } else {
-                //neu server tra ve danh sach rong
-                if (playlist.isEmpty()) {
-                    playlist = emptyList()
-                    currentIndex = 0
+//
+////                if (playlist.isEmpty()) { //luc mo app
+////                    playlist = localProcessedList
+////                    isLoading = false
+////                } else {
+////                    //neu dang chay quang cao thi luu vao pendingPlaylist
+////                    //pendingPlaylist = fetchedMain
+////
+////                    //cap nhat ngay neu danh sach tu server thay doi so voi hien tai
+////                    //kiem tra bang cach so sanh kich thuoc hoac phan tu dau tien
+////                    if (localProcessedList != playlist) {
+////                        playlist = localProcessedList
+////                        //dam bao currentIndex khong bi tran sau khi cap nhat danh sach
+////                        if (currentIndex >= playlist.size) {
+////                            currentIndex = 0
+////                        }
+////                    }
+////                }
+//            } else {
+//                //neu server tra ve danh sach rong
+//                if (playlist.isEmpty()) {
+//                    playlist = emptyList()
+//                    currentIndex = 0
+//                    isLoading = false
+//                }
+                // Tải trước các tệp media về thư mục nội bộ (cho cả playlist chính và playlist phụ)
+                val processedMain = fetchedMain.map { it.copy(url = getOrDownloadLocalFile(context, it.url)) }
+                val processedSchedItems = fetchedSched?.items?.map { it.copy(url = getOrDownloadLocalFile(context, it.url)) } ?: emptyList()
+
+                val processedSched = fetchedSched?.copy(items = processedSchedItems)
+
+                if (processedMain != mainPlaylist || processedSched != scheduledPlaylistState) {
+                    mainPlaylist = processedMain
+                    scheduledPlaylistState = processedSched
                     isLoading = false
+                    savePlaylistCache(context, processedMain)
+                    saveScheduleCache(context, processedSched)
+
+                    // Gom dọn dẹp file thừa từ cả 2 playlist
+                    val allActiveFiles = processedMain + processedSchedItems
+                    cleanUnusedFiles(context, allActiveFiles)
                 }
             }
             delay(10000)  //tai playlist tu server moi 10s
         }
     }
 
+    // 2. Thuật toán kiểm tra thời gian thực để phân định phát playlist chính hay phụ
+    LaunchedEffect(mainPlaylist, scheduledPlaylistState) {
+        while (true) {
+            var shouldUseScheduled = false
+
+            val sched = scheduledPlaylistState
+            if (sched != null && sched.enabled && sched.startTime.isNotBlank() && sched.endTime.isNotBlank()) {
+                try {
+                    // Định dạng thời gian từ thẻ input datetime-local của web admin dạng "YYYY-MM-DDTHH:mm"
+                    val sdf = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm", java.util.Locale.getDefault()).apply {
+                        // Đồng bộ múi giờ hệ thống để khớp tuyệt đối với Admin Web
+                        timeZone = java.util.TimeZone.getDefault()
+                    }
+
+                    val startMillis = sdf.parse(sched.startTime)?.time ?: 0L
+                    val endMillis = sdf.parse(sched.endTime)?.time ?: 0L
+                    val currentMillis = System.currentTimeMillis()
+
+                    if (currentMillis in startMillis..endMillis && sched.items.isNotEmpty()) {
+                        shouldUseScheduled = true
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+
+            val targetList = if (shouldUseScheduled) sched!!.items else mainPlaylist
+            if (activePlaylistToPlay != targetList) {
+                activePlaylistToPlay = targetList
+                currentIndex = 0 // Reset lại vị trí phát từ đầu khi chuyển đổi qua lại giữa lịch chính và lịch phụ
+                playbackKey++ // Bắt buộc làm mới trình phát ngay khi đổi lịch
+            }
+            delay(2000) // Kiểm tra mốc thời gian mỗi 2 giây
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         //dieu phoi hien thi quang cao khi co du lieu playlist
-        if (!isLoading && playlist.isNotEmpty()) {
+        if (!isLoading && activePlaylistToPlay.isNotEmpty()) {
             //dam bao currentIndex khong bao gio vuot qua kich thuoc mang moi, tranh loi khi xoa item
-            if (currentIndex >= playlist.size) {
+            if (currentIndex >= activePlaylistToPlay.size) {
                 currentIndex = 0
             }
 
-            val currentAd = playlist[currentIndex]
+            val currentAd = activePlaylistToPlay[currentIndex]
 
             AdsPlayer(
                 adUrl = currentAd.url,
@@ -275,7 +367,7 @@ fun AdsPlayerScreen(
                 playbackKey =  playbackKey //ep lam moi moi khi chay 1 item
             ) {
                 //tang index dung chia lay du de tu dong lap
-                currentIndex = (currentIndex + 1) % playlist.size //chuyen sang quang cao tiep
+                currentIndex = (currentIndex + 1) % activePlaylistToPlay.size //chuyen sang quang cao tiep
                 playbackKey++ //tang key de bao hieu composable chay lai tu
 
 //            if (currentIndex == 0) { //sau khi chay het 1 vong lap day du, cap nhat playlist moi neu co
