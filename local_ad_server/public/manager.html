@@ -1,137 +1,215 @@
 <!DOCTYPE html>
+<html lang="vi" class="dark">
 <head>
     <meta charset="UTF-8">
     <title>Ads Server Dashboard (Manager)</title>
-    <style>
-        body { 
-            font-family: Arial, sans-serif; 
-            margin: 40px; 
-            background: #f4f4f9; 
-        }
-        h1, h2 { 
-            color: #333; 
-        }
-        .container { 
-            display: flex; 
-            gap: 20px; 
-        }
-        .sidebar { 
-            flex: 1; 
-            background: white; 
-            padding: 20px; 
-            border-radius: 8px; 
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
-            max-height: 600px; 
-            overflow-y: auto; 
-        }
-        .main-content { 
-            flex: 2; 
-        }
-        .card { 
-            background: white; 
-            padding: 20px; 
-            margin-bottom: 20px; 
-            border-radius: 8px; 
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
-        }
-        table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            margin-top: 10px; 
-        }
-        th, td { 
-            border: 1px solid #ddd; 
-            padding: 10px; 
-            text-align: left; 
-        }
-        th { 
-            background-color: #007bff; 
-            color: white; 
-        }
-        button { 
-            background: #dc3545; 
-            color: white; 
-            border: none; 
-            padding: 6px 12px; 
-            cursor: pointer; 
-            border-radius: 4px; 
-        }
-        button.add { 
-            background: #28a745; 
-        }
-        button.select { 
-            background: #17a2b8; 
-            padding: 4px 8px; 
-            font-size: 12px; 
-        }
-        input { 
-            padding: 8px; 
-            margin-right: 10px; 
-        }
-        .tv-item { 
-            padding: 10px; 
-            border-bottom: 1px solid #eee; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-        }
-    </style>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { darkMode: 'class' };
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style> body { font-family: 'Inter', sans-serif; } </style>
 </head>
-<body>
-    <div style="display: flex; justify-content: space-between; align-items: center;">
-        <h1>Quản lý quảng cáo TV (MANAGER)</h1>
-        <button style="background: #6c757d;" onclick="logout()">Đăng xuất</button>
-    </div>
 
-    <div class="container">
-        <div class="sidebar">
-            <h2>Danh sách TV</h2>
-            <div id="deviceListContainer">
-                <p style="color: gray;"> Đang tải danh sách thiết bị...</p>
+<body class="bg-[#FFFADC] dark:bg-[#031118] text-slate-800 dark:text-slate-100 min-h-screen p-6 transition-colors duration-300">
+
+    <!-- Header -->
+    <header class="flex justify-between items-center bg-white dark:bg-[#065084] px-6 py-4 rounded-2xl border border-[#A3DC9A]/60 dark:border-[#0F828C]/40 shadow-md transition-colors duration-300 mb-8">
+        <div class="flex items-center space-x-3">
+            <span class="text-2xl">📺</span>
+            <h1 class="text-xl font-bold tracking-wide text-slate-800 dark:text-white">
+                Quản lý quảng cáo TV
+                <span class="bg-orange-400 text-slate-900 text-xs px-2.5 py-1 rounded-full uppercase ml-2 font-semibold">
+                    MANAGER
+                </span>
+            </h1>
+        </div>
+        <div class="flex items-center space-x-3">
+            <button onclick="toggleTheme()" class="bg-slate-100 dark:bg-[#031118]/60 hover:bg-slate-200 dark:hover:bg-[#031118] text-slate-700 dark:text-cyan-200 px-4 py-2 rounded-xl text-sm font-medium transition border border-slate-200 dark:border-[#0F828C]/40 flex items-center space-x-2">
+                <span id="themeIcon">☀️</span>
+                <span id="themeText">Light Mode</span>
+            </button>
+            <button class="bg-red-50 dark:bg-red-500/20 hover:bg-red-100 dark:hover:bg-red-500/30 text-red-600 dark:text-red-300 px-4 py-2 rounded-xl text-sm font-medium transition border border-red-200 dark:border-red-500/30" onclick="logout()">
+                Đăng xuất
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="flex flex-col lg:flex-row gap-6">
+        
+        <!-- COT TRAI: Danh sách TV được phân quyền -->
+        <div class="w-full lg:w-1/4 bg-white dark:bg-[#065084]/60 backdrop-blur p-5 rounded-2xl border border-[#A3DC9A]/60 dark:border-[#0F828C]/30 shadow-md dark:shadow-xl h-fit transition-colors duration-300">
+            <div class="flex justify-between items-center mb-3">
+                <h2 class="text-base font-semibold text-slate-700 dark:text-cyan-200">TV được phân quyền</h2>
+                <span class="text-xs bg-[#A3DC9A]/40 dark:bg-[#0F828C] text-slate-700 dark:text-white px-2 py-0.5 rounded-full font-medium" id="deviceCountBadge">0 TV</span>
+            </div>
+            <div class="space-y-2.5 max-h-[500px] overflow-y-auto pr-1" id="deviceListContainer">
+                <p class="text-slate-400 dark:text-slate-300 text-sm italic">Đang tải danh sách thiết bị...</p>
             </div>
         </div>
 
-        <div class="main-content">
-            <div class="card">
-                <h2>Playlist hiện tại của: <span id="labelDevice" style="color: #007bff;">TV_01</span></h2>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Tiêu đề</th>
-                            <th>Loại</th>
-                            <th>Thời lượng (s)</th>
-                            <th>Thao tác</th>
-                        </tr>
-                    </thead>
-                    <tbody id="playlistTableBody">
-                        <tr><td colspan="5">Đang tải...</td></tr>
-                    </tbody>
-                </table>
+        <!-- COT PHAI: Nội dung chính -->
+        <div class="flex-1 space-y-6">
+
+            <!-- Playlist Container (Chia Tab Quản Lý) -->
+            <div class="bg-white dark:bg-[#065084]/60 backdrop-blur p-6 rounded-2xl border border-[#A3DC9A]/60 dark:border-[#0F828C]/30 shadow-md dark:shadow-xl transition-colors duration-300">
+                
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 border-b border-slate-200 dark:border-[#0F828C]/40 pb-4">
+                    <div>
+                        <h2 class="text-lg font-semibold text-slate-800 dark:text-white flex items-center gap-2">
+                            Quản lý màn hình: 
+                            <span class="text-emerald-700 dark:text-[#0F828C] bg-[#A3DC9A]/30 dark:bg-cyan-950/60 px-3 py-1 rounded-xl font-bold" id="labelDevice">--</span>
+                        </h2>
+                    </div>
+
+                    <!-- Nút Chuyển Tab -->
+                    <div class="flex bg-slate-100 dark:bg-[#031118]/60 p-1 rounded-xl border border-slate-200 dark:border-[#0F828C]/40">
+                        <button id="tabMainBtn" onclick="switchPlaylistTab('main')" class="px-4 py-1.5 rounded-lg text-xs font-semibold transition bg-white dark:bg-[#0F828C] text-slate-800 dark:text-white shadow-sm">
+                            📺 Playlist chính
+                        </button>
+                        <button id="tabSchedBtn" onclick="switchPlaylistTab('sched')" class="px-4 py-1.5 rounded-lg text-xs font-semibold transition text-slate-500 dark:text-cyan-300 hover:text-slate-800 dark:hover:text-white">
+                            ⏰ Lịch phát hẹn giờ
+                        </button>
+                    </div>
+                </div>
+
+                <!-- VIEW 1: BẢNG PLAYLIST CHÍNH (Manager chỉ được ẩn/hiện, không được xóa tệp chung) -->
+                <div id="mainPlaylistView">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-slate-100 dark:border-[#0F828C]/40 text-slate-500 dark:text-cyan-200 text-xs uppercase tracking-wider bg-slate-50/50 dark:bg-transparent">
+                                    <th class="py-3 px-4">ID</th>
+                                    <th class="py-3 px-4">Tiêu đề</th>
+                                    <th class="py-3 px-4">Nguồn gốc</th>
+                                    <th class="py-3 px-4">Loại</th>
+                                    <th class="py-3 px-4">Thời lượng (s)</th>
+                                    <th class="py-3 px-4 text-center">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 dark:divide-[#0F828C]/20 text-sm" id="playlistTableBody">
+                                <tr><td class="py-6 text-center text-slate-400 dark:text-slate-300 italic" colspan="6">Đang tải...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>  
+                </div>
+
+                <!-- VIEW 2: BẢNG & CẤU HÌNH PLAYLIST PHỤ HẸN GIỜ (Manager toàn quyền Bật/Tắt, Cài đặt giờ, Thêm/Xóa) -->
+                <div id="schedPlaylistView" class="hidden space-y-5">
+                    
+                    <!-- 1. Thanh Toggle Kích hoạt hẹn giờ -->
+                    <div class="bg-slate-50 dark:bg-[#031118]/40 p-4 rounded-xl border border-slate-200 dark:border-[#0F828C]/30 flex items-center justify-between transition-colors">
+                        <span class="text-sm font-semibold text-slate-700 dark:text-cyan-200">Kích hoạt hẹn giờ:</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="schedEnabledToggle" class="sr-only peer" onchange="toggleScheduleActivation(this)">
+                            <div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500 dark:peer-checked:bg-[#0F828C]"></div>
+                            <span class="ml-2 text-xs font-semibold text-slate-600 dark:text-slate-300" id="schedStatusText">Đã tắt</span>
+                        </label>
+                    </div>
+
+                    <!-- 2. Khung chọn Thời gian -->
+                    <div id="schedTimeConfigWrapper" class="bg-slate-50 dark:bg-[#031118]/40 p-4 rounded-xl border border-slate-200 dark:border-[#0F828C]/30 space-y-3 transition-all duration-300">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs text-slate-500 dark:text-cyan-300 mb-1">Thời gian bắt đầu phát (24h):</label>
+                                <input type="datetime-local" id="schedStartTimeInput" step="60" lang="en-GB" onchange="saveScheduleSettings()" class="w-full bg-white dark:bg-[#031118]/80 border border-slate-200 dark:border-[#0F828C]/40 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-[#A3DC9A]">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-slate-500 dark:text-cyan-300 mb-1">Thời gian kết thúc (24h):</label>
+                                <input type="datetime-local" id="schedEndTimeInput" step="60" lang="en-GB" onchange="saveScheduleSettings()" class="w-full bg-white dark:bg-[#031118]/80 border border-slate-200 dark:border-[#0F828C]/40 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-[#A3DC9A]">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. Bảng Danh sách Tệp trong Playlist Phụ -->
+                    <div class="overflow-x-auto bg-white dark:bg-[#065084]/40 p-4 rounded-xl border border-slate-200 dark:border-[#0F828C]/30">
+                        <h3 class="text-xs font-semibold text-slate-600 dark:text-cyan-200 uppercase tracking-wider mb-3">Danh sách tệp phát trong lịch hẹn giờ</h3>
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-slate-100 dark:border-[#0F828C]/40 text-slate-500 dark:text-cyan-200 text-xs uppercase tracking-wider bg-slate-50/50 dark:bg-transparent">
+                                    <th class="py-3 px-4">ID</th>
+                                    <th class="py-3 px-4">Tiêu đề</th>
+                                    <th class="py-3 px-4">Nguồn gốc</th>
+                                    <th class="py-3 px-4">Loại</th>
+                                    <th class="py-3 px-4">Thời lượng (s)</th>
+                                    <th class="py-3 px-4 text-center">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 dark:divide-[#0F828C]/20 text-sm" id="schedPlaylistTableBody">
+                                <tr><td class="py-6 text-center text-slate-400 dark:text-slate-300 italic" colspan="6">Chưa có tệp nào trong lịch hẹn giờ</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                </div>
+
             </div>
 
-            <div class="card">
-                <h2> Tải lên tệp ảnh hoặc video để đặt làm quảng cáo</h2>
-                <form action="/upload" method="POST" enctype="multipart/form-data">
-                    <input type="hidden" name="deviceId" id="formDeviceId" value="TV_01">
-                    <input type="file" name="mediaFile" required accept="image/*,video/*"> <br><br>
-                    <label>Tiêu đề: </label><br>
-                    <input type="text" name="title" style="width: 100%;"><br><br>
-                    <label>Thời lượng hiển thị nếu là ảnh (giây): </label><br>
-                    <input type="number" name="duration" value="10" min="1"><br><br>
-                    <button type="submit" class="add">Tải lên</button>
-                </form> 
+            <!-- Thêm tệp vào Playlist: Chọn từ Thư viện Media chung HOẶC Upload riêng -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <input type="hidden" id="formDeviceId" value="">
+                
+                <!-- Chọn từ Thư viện Media chung -->
+                <div class="bg-white dark:bg-[#065084]/60 backdrop-blur p-6 rounded-2xl border border-[#A3DC9A]/60 dark:border-[#0F828C]/30 shadow-md dark:shadow-xl transition-colors duration-300 flex flex-col justify-between">
+                    <div>
+                        <h2 class="text-base font-semibold text-slate-800 dark:text-white mb-2">📂 Thêm từ Thư viện Media chung</h2>
+                        <p class="text-xs text-slate-500 dark:text-cyan-200 mb-3">Chọn các tệp từ hệ thống tổng:</p>
+                        <div id="mediaPoolContainer" class="space-y-2 max-h-[160px] overflow-y-auto pr-1 mb-4">
+                            <p class="text-xs text-slate-400 italic">Đang tải thư viện...</p>
+                        </div>
+                    </div>
+                    <button class="w-full bg-[#A3DC9A] dark:bg-[#0F828C] hover:bg-[#92cb87] dark:hover:bg-[#0d6d76] text-slate-900 dark:text-white font-semibold px-4 py-2 rounded-xl transition shadow-sm text-sm" onclick="addSelectedMediaToPlaylist()">
+                        Thêm tệp đã chọn vào TV
+                    </button>
+                </div>
+
+                <!-- Tải lên tệp riêng -->
+                <div class="bg-white dark:bg-[#065084]/60 backdrop-blur p-6 rounded-2xl border border-[#A3DC9A]/60 dark:border-[#0F828C]/30 shadow-md dark:shadow-xl transition-colors duration-300">
+                    <h2 class="text-base font-semibold text-slate-800 dark:text-white mb-2">📤 Tải lên tệp riêng cho thiết bị</h2>
+                    <form class="space-y-3" id="managerUploadForm" onsubmit="uploadManagerMedia(event)">
+                        <input type="hidden" name="deviceId" id="formUploadDeviceId" value="">
+                        <input type="hidden" name="targetPlaylist" id="formTargetPlaylist" value="main">
+                        
+                        <div>
+                            <input class="w-full text-xs text-slate-500 dark:text-slate-300 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-[#A3DC9A] dark:file:bg-[#0F828C] file:text-slate-900 dark:file:text-white cursor-pointer bg-slate-50 dark:bg-[#031118]/60 rounded-xl border border-slate-200 dark:border-[#0F828C]/40 p-1.5 transition" type="file" name="mediaFile" id="managerMediaFileInput" required accept="image/*,video/*">
+                        </div>
+                        <div>
+                            <input class="w-full bg-slate-50 dark:bg-[#031118]/60 border border-slate-200 dark:border-[#0F828C]/40 rounded-xl px-3 py-2 text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#A3DC9A] dark:focus:border-cyan-300 transition text-xs" type="text" name="title" id="managerMediaTitleInput" placeholder="Tiêu đề tệp...">
+                        </div>
+                        <div>
+                            <input class="w-full bg-slate-50 dark:bg-[#031118]/60 border border-slate-200 dark:border-[#0F828C]/40 rounded-xl px-3 py-2 text-slate-800 dark:text-white focus:outline-none focus:border-[#A3DC9A] dark:focus:border-cyan-300 transition text-xs" type="number" name="duration" id="managerMediaDurationInput" value="10" min="1" placeholder="Thời lượng ảnh (giây)">
+                        </div>
+                        <button class="w-full bg-[#A3DC9A] dark:bg-[#0F828C] hover:bg-[#92cb87] dark:hover:bg-[#0d6d76] text-slate-900 dark:text-white font-semibold px-4 py-2 rounded-xl transition shadow-sm text-sm" type="submit">
+                            Tải lên tệp riêng
+                        </button>                       
+                    </form> 
+                </div>
+
             </div>
+
         </div>
     </div>
 
     <script>
+        const htmlElement = document.documentElement;
+        const themeIcon = document.getElementById('themeIcon');
+        const themeText = document.getElementById('themeText');
+
+        const formDeviceId = document.getElementById('formDeviceId');
+        const formUploadDeviceId = document.getElementById('formUploadDeviceId');
+        const labelDevice = document.getElementById('labelDevice');
+        const deviceListContainer = document.getElementById('deviceListContainer');
+        const mediaPoolContainer = document.getElementById('mediaPoolContainer');
+
+        let rawDevicesData = {};
+
         async function checkManagerAuth() {
             try {
                 const res = await fetch('/api/me');
                 const data = await res.json();
-                if (!data.success) {
-                    window.location.href = '/login.html';
+                if (!data.success || data.user.role === 'admin') {
+                    if(!data.success) window.location.href = '/login.html';
                 }
             } catch (e) {
                 window.location.href = '/login.html';
@@ -144,13 +222,12 @@
             window.location.href = '/login.html';
         }
 
-        const formDeviceId = document.getElementById('formDeviceId');
-        const labelDevice = document.getElementById('labelDevice');
-        const deviceListContainer = document.getElementById('deviceListContainer');
-
         function setActiveDevice(deviceId) {
+            if (!deviceId) return;
             formDeviceId.value = deviceId;
+            formUploadDeviceId.value = deviceId;
             labelDevice.textContent = deviceId;
+            switchPlaylistTab('main');
             loadPlaylist(deviceId);
             loadDeviceList();
         }
@@ -160,61 +237,283 @@
                 const response = await fetch('/api/devices');
                 const result = await response.json();
                 if (result.success && result.devices) {
+                    rawDevicesData = result.devices;
                     deviceListContainer.innerHTML = '';
-                    const devices = result.devices;
-                    const deviceKeys = Object.keys(devices);
+                    const deviceKeys = Object.keys(rawDevicesData);
+                    
+                    document.getElementById('deviceCountBadge').textContent = `${deviceKeys.length} TV`;
+
                     if (deviceKeys.length === 0) {
-                        deviceListContainer.innerHTML = '<p style="color: gray;"> Chưa có thiết bị</p>';
+                        deviceListContainer.innerHTML = '<p class="text-slate-400 dark:text-slate-300 text-xs italic text-center py-4">Không có thiết bị nào được phân quyền</p>';
                         return;              
                     }
+
                     const currentActiveId = formDeviceId.value;
                     deviceKeys.forEach(devId => {
-                        const itemsCount = devices[devId].length || 0;
+                        const deviceObj = rawDevicesData[devId];
+                        const playlistArray = Array.isArray(deviceObj) ? deviceObj : (deviceObj.playlist || []);
+                        const itemsCount = playlistArray.length || 0;
+                        const isCurrent = devId === currentActiveId;
+
                         const div = document.createElement('div');
-                        div.className = 'tv-item';
-                        if (devId === currentActiveId) div.style.background = '#e2f0d9';
+                        div.className = isCurrent 
+                            ? 'p-3 rounded-xl bg-[#A3DC9A]/30 dark:bg-[#0F828C]/40 border border-[#A3DC9A] dark:border-cyan-400 flex justify-between items-center transition shadow-sm' 
+                            : 'p-3 rounded-xl bg-slate-50 dark:bg-[#031118]/40 border border-slate-200 dark:border-[#0F828C]/20 hover:bg-slate-100 dark:hover:bg-[#0F828C]/20 flex justify-between items-center transition';
+                        
                         div.innerHTML = `
                             <div>
-                                <strong>${devId}</strong><br>
-                                <small style="color: gray;">${itemsCount} tệp</small>
+                                <strong class="text-slate-800 dark:text-white font-semibold text-sm">${devId}</strong><br>
+                                <span class="text-[11px] text-slate-500 dark:text-cyan-300">${itemsCount} tệp</span>
                             </div>
-                            <button class="select" onClick="setActiveDevice('${devId}')">Chọn</button>
+                            <button class="bg-[#A3DC9A] dark:bg-[#0F828C] hover:bg-[#92cb87] dark:hover:bg-[#0d6d76] text-slate-900 dark:text-white font-medium px-2.5 py-1 rounded-lg text-xs transition" onClick="setActiveDevice('${devId}')">Chọn</button>
                         `;
                         deviceListContainer.appendChild(div);
                     });
+
+                    if (!currentActiveId && deviceKeys.length > 0) {
+                        setActiveDevice(deviceKeys[0]);
+                    }
                 }
             } catch (err) { console.error(err); }
         }
 
+        function switchPlaylistTab(tab) {
+            const mainView = document.getElementById('mainPlaylistView');
+            const schedView = document.getElementById('schedPlaylistView');
+            const mainBtn = document.getElementById('tabMainBtn');
+            const schedBtn = document.getElementById('tabSchedBtn');
+            const targetInput = document.getElementById('formTargetPlaylist');
+
+            if (tab === 'main') {
+                mainView.classList.remove('hidden');
+                schedView.classList.add('hidden');
+                mainBtn.className = "px-4 py-1.5 rounded-lg text-xs font-semibold transition bg-white dark:bg-[#0F828C] text-slate-800 dark:text-white shadow-sm";
+                schedBtn.className = "px-4 py-1.5 rounded-lg text-xs font-semibold transition text-slate-500 dark:text-cyan-300 hover:text-slate-800 dark:hover:text-white";
+                if (targetInput) targetInput.value = 'main'; // Gán đích là playlist chính
+            } else {
+                mainView.classList.add('hidden');
+                schedView.classList.remove('hidden');
+                schedBtn.className = "px-4 py-1.5 rounded-lg text-xs font-semibold transition bg-white dark:bg-[#0F828C] text-slate-800 dark:text-white shadow-sm";
+                mainBtn.className = "px-4 py-1.5 rounded-lg text-xs font-semibold transition text-slate-500 dark:text-cyan-300 hover:text-slate-800 dark:hover:text-white";
+                if (targetInput) targetInput.value = 'scheduled'; // Gán đích là playlist hẹn giờ
+            }
+        }
+
+        function formatDateTime24h(dateTimeStr) {
+            if (!dateTimeStr) return '';
+            const dt = new Date(dateTimeStr);
+            if (isNaN(dt.getTime())) return dateTimeStr;
+            const year = dt.getFullYear();
+            const month = String(dt.getMonth() + 1).padStart(2, '0');
+            const day = String(dt.getDate()).padStart(2, '0');
+            const hours = String(dt.getHours()).padStart(2, '0');
+            const minutes = String(dt.getMinutes()).padStart(2, '0');
+            return `${year}-${month}-${day}T${hours}:${minutes}`;
+        }
+
+        function updateScheduleUIState(isEnabled) {
+            const wrapper = document.getElementById('schedTimeConfigWrapper');
+            const statusText = document.getElementById('schedStatusText');
+            statusText.textContent = isEnabled ? 'Đang bật' : 'Đã tắt';
+            if (isEnabled) {
+                wrapper.classList.remove('opacity-50', 'pointer-events-none');
+            } else {
+                wrapper.classList.add('opacity-50', 'pointer-events-none');
+            }
+        }
+
+        async function toggleScheduleActivation(checkbox) {
+            const isEnabled = checkbox.checked;
+            updateScheduleUIState(isEnabled);
+            await saveScheduleSettings();
+        }
+
+        async function saveScheduleSettings() {
+            const deviceId = formDeviceId.value;
+            if (!deviceId) return;
+            const enabled = document.getElementById('schedEnabledToggle').checked;
+            const startTime = document.getElementById('schedStartTimeInput').value;
+            const endTime = document.getElementById('schedEndTimeInput').value;
+
+            try {
+                await fetch('/api/device/schedule', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ deviceId, enabled, startTime, endTime })
+                });
+            } catch (err) { console.error('Lỗi lưu lịch:', err); }
+        }
+
         async function loadPlaylist(deviceId) {
+            if (!deviceId) return;
             try {
                 const response = await fetch(`/api/playlist?deviceId=${deviceId}&admin=true`);
                 const result = await response.json();
+                
+                // --- Playlist chính (Manager chỉ ẩn hiện, nút xóa bị ẩn nếu là tệp admin_shared) ---
                 const tbody = document.getElementById('playlistTableBody');
                 tbody.innerHTML = '';
 
                 if (!result.items || result.items.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Chưa có quảng cáo </td></tr>'; 
+                    tbody.innerHTML = '<tr><td colspan="6" class="py-6 text-center text-slate-400 dark:text-slate-300 italic">Chưa có quảng cáo</td></tr>'; 
+                } else {
+                    result.items.forEach(item => {
+                        const isHidden = item.isHidden === true;
+                        const originBadge = item.origin === 'admin_shared' 
+                            ? '<span class="bg-purple-100 dark:bg-purple-950 text-purple-600 dark:text-purple-300 px-2 py-0.5 rounded text-[10px] font-bold">Chung (Admin)</span>'
+                            : '<span class="bg-orange-100 dark:bg-orange-950 text-orange-600 dark:text-orange-300 px-2 py-0.5 rounded text-[10px] font-bold">Riêng (Manager)</span>';
+
+                        // Manager chỉ được xóa tệp do chính mình upload (manager_custom)
+                        const deleteBtn = item.origin === 'manager_custom' 
+                            ? `<button class="bg-red-50 dark:bg-red-600/30 text-red-600 dark:text-red-300 border border-red-200 dark:border-red-500/30 px-2.5 py-1 rounded-lg text-xs transition" onclick="deletePlaylistItem('${deviceId}', '${item.id}')">Xoá</button>`
+                            : '';
+
+                        const tr = document.createElement('tr');
+                        tr.className = "hover:bg-slate-50 dark:hover:bg-[#0F828C]/10 transition border-b border-slate-100 dark:border-[#0F828C]/20";
+                        tr.innerHTML = `
+                            <td class="py-3 px-4 text-slate-500 dark:text-cyan-200 font-mono text-xs">${item.id}</td>
+                            <td class="py-3 px-4 text-slate-800 dark:text-white font-medium">${item.title || ''}</td>
+                            <td class="py-3 px-4">${originBadge}</td>
+                            <td class="py-3 px-4"><span class="px-2 py-0.5 rounded-md text-[10px] font-bold ${item.type.toUpperCase() === 'VIDEO' ? 'bg-blue-50 dark:bg-cyan-950 text-blue-600 dark:text-cyan-300' : 'bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-300'}">${item.type.toUpperCase()}</span></td>
+                            <td class="py-3 px-4 text-slate-600 dark:text-cyan-100">${item.duration}</td>
+                            <td class="py-3 px-4 text-center space-x-2">
+                                <button class="px-2.5 py-1 rounded-lg text-xs font-medium transition text-white ${isHidden ? 'bg-slate-400' : 'bg-emerald-600 hover:bg-emerald-500 font-semibold'}" 
+                                    onclick="toggleAdVisibility('${deviceId}', '${item.id}', ${isHidden})">
+                                    ${isHidden ? 'Đang ẩn' : 'Đang hiện'}
+                                </button>
+                                ${deleteBtn}
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }
+
+                // --- Playlist phụ hẹn giờ (Manager toàn quyền) ---
+                if (result.scheduledPlaylist) {
+                    const sched = result.scheduledPlaylist;
+                    const isEnabled = sched.enabled || false;
+                    
+                    document.getElementById('schedEnabledToggle').checked = isEnabled;
+                    document.getElementById('schedStartTimeInput').value = formatDateTime24h(sched.startTime);
+                    document.getElementById('schedEndTimeInput').value = formatDateTime24h(sched.endTime);
+
+                    updateScheduleUIState(isEnabled);
+                    renderScheduledTable(deviceId, sched.items || []);
+                }
+            } catch (err) { console.error(err); }
+        }
+
+        function renderScheduledTable(deviceId, items) {
+            const schedTbody = document.getElementById('schedPlaylistTableBody');
+            schedTbody.innerHTML = '';
+
+            if (items.length === 0) {
+                schedTbody.innerHTML = '<tr><td colspan="6" class="py-6 text-center text-slate-400 dark:text-slate-300 italic">Chưa có tệp nào trong lịch hẹn giờ</td></tr>';
+                return;
+            }
+
+            items.forEach(item => {
+                const originBadge = item.origin === 'admin_shared' 
+                    ? '<span class="bg-purple-100 dark:bg-purple-950 text-purple-600 dark:text-purple-300 px-2 py-0.5 rounded text-[10px] font-bold">Chung (Admin)</span>'
+                    : '<span class="bg-orange-100 dark:bg-orange-950 text-orange-600 dark:text-orange-300 px-2 py-0.5 rounded text-[10px] font-bold">Riêng (Manager)</span>';
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 dark:hover:bg-[#0F828C]/10 transition border-b border-slate-100 dark:border-[#0F828C]/20";
+                tr.innerHTML = `
+                    <td class="py-3 px-4 text-slate-500 dark:text-cyan-200 font-mono text-xs">${item.id}</td>
+                    <td class="py-3 px-4 text-slate-800 dark:text-white font-medium">${item.title || ''}</td>
+                    <td class="py-3 px-4">${originBadge}</td>
+                    <td class="py-3 px-4"><span class="px-2 py-0.5 rounded-md text-[10px] font-bold ${item.type.toUpperCase() === 'VIDEO' ? 'bg-blue-50 dark:bg-cyan-950 text-blue-600 dark:text-cyan-300' : 'bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-300'}">${item.type.toUpperCase()}</span></td>
+                    <td class="py-3 px-4 text-slate-600 dark:text-cyan-100">${item.duration}</td>
+                    <td class="py-3 px-4 text-center">
+                        <button class="pointer-events-auto opacity-100 bg-red-50 dark:bg-red-600/30 text-red-600 dark:text-red-300 border border-red-200 dark:border-red-500/30 px-2.5 py-1 rounded-lg text-xs transition cursor-pointer" onclick="deleteScheduledItem('${deviceId}', '${item.id}')">Xoá khỏi lịch</button>
+                    </td>
+                `;
+                schedTbody.appendChild(tr);
+            });
+        }
+
+        async function loadMediaPool() {
+            try {
+                const response = await fetch('/api/media-library');
+                const result = await response.json();
+                mediaPoolContainer.innerHTML = '';
+                if (!result.mediaLibrary || result.mediaLibrary.length === 0) {
+                    mediaPoolContainer.innerHTML = '<p class="text-xs text-slate-400 italic">Thư viện chung chưa có tệp nào.</p>';
                     return;
                 }
-                result.items.forEach(item => {
-                    const isHidden = item.isHidden === true;
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td>${item.id}</td>
-                        <td>${item.title || ''}</td>
-                        <td><b>${item.type.toUpperCase()}</b></td>
-                        <td>${item.duration}</td>
-                        <td>
-                            <button class="select" style="background: ${isHidden ? '#6c757d' : '#28a745'};" 
-                                onclick="toggleAdVisibility('${deviceId}', '${item.id}', ${isHidden})">
-                                ${isHidden ? 'Đang ẩn' : 'Đang hiện'}
-                            </button>
-                        </td>
+                result.mediaLibrary.forEach(media => {
+                    const div = document.createElement('div');
+                    div.className = 'flex items-center justify-between text-xs bg-slate-50 dark:bg-[#031118]/40 p-2 rounded-xl border border-slate-200 dark:border-[#0F828C]/20 transition mb-2';
+                    div.innerHTML = `
+                        <label class="flex items-center space-x-2 cursor-pointer truncate flex-1 mr-2">
+                            <input type="checkbox" name="mediaPoolCheck" value="${media.id}" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                            <span class="truncate text-slate-700 dark:text-slate-200 font-medium">${media.title}</span>
+                            <span class="ml-2 text-[10px] uppercase bg-cyan-100 dark:bg-cyan-900 text-cyan-700 dark:text-cyan-300 px-1.5 py-0.5 rounded">${media.type}</span>
+                        </label>
                     `;
-                    tbody.appendChild(tr);
+                    mediaPoolContainer.appendChild(div);
                 });
             } catch (err) { console.error(err); }
+        }
+
+        async function addSelectedMediaToPlaylist() {
+            const deviceId = formDeviceId.value;
+            const checkboxes = document.querySelectorAll('input[name="mediaPoolCheck"]:checked');
+            if (checkboxes.length === 0) {
+                alert('Vui lòng chọn ít nhất một tệp từ thư viện chung!');
+                return;
+            }
+            const isSchedTabActive = !document.getElementById('schedPlaylistView').classList.contains('hidden');
+            // Manager có thể thêm vào cả playlist chính (thông qua pool) hoặc playlist hẹn giờ
+            const targetApi = isSchedTabActive ? '/api/scheduled-playlist/add' : '/api/playlist/add-from-pool';
+
+            for (const cb of checkboxes) {
+                try {
+                    await fetch(targetApi, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ deviceId, mediaIdFromPool: cb.value })
+                    });
+                } catch (e) { console.error(e); }
+            }
+            loadPlaylist(deviceId);
+            checkboxes.forEach(cb => cb.checked = false);
+        }
+
+        async function uploadManagerMedia(event) {
+            event.preventDefault();
+            const formElement = document.getElementById('managerUploadForm');
+            const formData = new FormData(formElement);
+            const currentDeviceId = formDeviceId.value;
+
+            if (!currentDeviceId) {
+                alert('Vui lòng chọn thiết bị TV trước khi tải lên!');
+                return;
+            }
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    // Reset form sau khi upload thành công
+                    formElement.reset();
+                    // Giữ lại deviceId cho form ẩn sau khi reset
+                    formUploadDeviceId.value = currentDeviceId;
+                    
+                    // Tải lại playlist ngay lập tức mà không reload lại trang
+                    loadPlaylist(currentDeviceId);
+                    loadDeviceList();
+                } else {
+                    alert('Không thể tải tệp lên');
+                }
+            } catch (err) {
+                console.error('Lỗi khi tải lên tệp riêng:', err);
+                alert('Có lỗi xảy ra khi kết nối server');
+            }
         }
 
         async function toggleAdVisibility(deviceId, adId, show) {
@@ -229,7 +528,53 @@
             } catch (err) { console.error(err); }
         }
 
-        setActiveDevice("tv_00");
-    </script>
+        async function deletePlaylistItem(deviceId, id) {
+            if (!confirm('Bạn chắc chắn muốn xoá tệp này?')) return;
+            try {
+                const response = await fetch(`/api/playlist/${deviceId}/${id}`, { method: 'DELETE' });
+                const result = await response.json();
+                if (result.success) loadPlaylist(deviceId);
+                else alert(result.message || 'Không thể xoá');
+            } catch (err) { console.error(err); }
+        }
+
+        async function deleteScheduledItem(deviceId, id) {
+            if (!confirm('Bạn có chắc chắn muốn xoá tệp này khỏi lịch hẹn giờ?')) return;
+            try {
+                const response = await fetch(`/api/playlist/${deviceId}/scheduled/${id}`, { method: 'DELETE' });
+                const result = await response.json();
+                if (result.success) loadPlaylist(deviceId);
+                else alert(result.message || 'Không thể xoá');
+            } catch (err) { console.error(err); }
+        }
+
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        if (savedTheme === 'light') {
+            htmlElement.classList.remove('dark');
+            themeIcon.textContent = '🌙';
+            themeText.textContent = 'Dark Mode';
+        } else {
+            htmlElement.classList.add('dark');
+            themeIcon.textContent = '☀️';
+            themeText.textContent = 'Light Mode';
+        }
+
+        function toggleTheme() {
+            if (htmlElement.classList.contains('dark')) {
+                htmlElement.classList.remove('dark');
+                localStorage.setItem('theme', 'light');
+                themeIcon.textContent = '🌙';
+                themeText.textContent = 'Dark Mode';
+            } else {
+                htmlElement.classList.add('dark');
+                localStorage.setItem('theme', 'dark');
+                themeIcon.textContent = '☀️';
+                themeText.textContent = 'Light Mode';
+            }
+        }
+
+        loadMediaPool();
+        loadDeviceList();
+    </script>    
 </body>
 </html>

@@ -284,9 +284,26 @@ app.get('/api/playlist', async (req, res) => {  //tra ve playlist
 //tra ve danh sach thiet bi neu da dang nhap admin/manager
 app.get('/api/devices', requireAuth, async (req, res) => {
     const parsed = await readAllPlaylist();
+    let devices = parsed.devices || {};
+
+    // Nếu là manager, lọc chỉ giữ lại các thiết bị được phân quyền trong allowedDevices
+    if (req.session.user.role === 'manager') {
+        const users = await readUsers();
+        const currentUser = users.find(u => u.id === req.session.user.id);
+        const allowedList = currentUser?.allowedDevices || [];
+        
+        const filteredDevices = {};
+        allowedList.forEach(devId => {
+            if (devices[devId]) {
+                filteredDevices[devId] = devices[devId];
+            }
+        });
+        devices = filteredDevices;
+    }
+
     res.json({
         success: true, 
-        devices: parsed.devices || {}
+        devices: devices
     });
 });
 
@@ -369,10 +386,43 @@ app.post('/upload', requireAuth, upload.single('mediaFile'), async (req, res) =>
     // };
 
     //doc, them, luu vao playlist cua deviceId
-    let playlist = await readPlaylist(deviceId);
-    if (!Array.isArray(playlist)) playlist = [];
+    const targetPlaylist = req.body.targetPlaylist; // Nhận diện tab đích: 'main' hoặc 'scheduled'
+    parsed = await readAllPlaylist();
+    if (!parsed.devices || !parsed.devices[deviceId]) {
+        return res.status(404).send('Không tìm thấy thiết bị');
+    }
 
-    playlist.push(newItem);
+    let deviceObj = parsed.devices[deviceId];
+    if (Array.isArray(deviceObj)) {
+        deviceObj = { group: "tv", displayName: deviceId, playlist: deviceObj, scheduledPlaylist: { enabled: false, items: [] } };
+        parsed.devices[deviceId] = deviceObj;
+    }
+
+    if (targetPlaylist === 'scheduled') {
+        // Đẩy vào Playlist hẹn giờ
+        if (!deviceObj.scheduledPlaylist) {
+            deviceObj.scheduledPlaylist = { enabled: false, items: [] };
+        }
+        if (!Array.isArray(deviceObj.scheduledPlaylist.items)) {
+            deviceObj.scheduledPlaylist.items = [];
+        }
+        deviceObj.scheduledPlaylist.items.push(newItem);
+    } else {
+        // Đẩy vào Playlist chính (mặc định)
+        if (!Array.isArray(deviceObj.playlist)) {
+            deviceObj.playlist = [];
+        }
+        deviceObj.playlist.push(newItem);
+    }
+
+    await fs.promises.writeFile(playlistFilePath, JSON.stringify(parsed, null, 2), 'utf8');
+
+    const redirectPath = req.session.user.role === 'admin' ? '/' : '/manager.html';
+    res.redirect(`${redirectPath}?deviceId=${deviceId}`);
+    // let playlist = await readPlaylist(deviceId);
+    // if (!Array.isArray(playlist)) playlist = [];
+
+    // playlist.push(newItem);
     // if (!devices[deviceId]) {
     //     devices[deviceId] = { group: "DEFAULT", displayName: deviceId, playlist: [] };
     // }
@@ -386,11 +436,11 @@ app.post('/upload', requireAuth, upload.single('mediaFile'), async (req, res) =>
     //     }
     //     devices[deviceId].playlist.push(newItem);
     // }
-    await savePlaylist(deviceId, playlist);
+    // await savePlaylist(deviceId, playlist);
 
-    const redirectPath = req.session.user.role === 'admin' ? '/' : '/manager.html';
+    // const redirectPath = req.session.user.role === 'admin' ? '/' : '/manager.html';
 
-    res.redirect(`${redirectPath}?deviceId=${deviceId}`);
+    // res.redirect(`${redirectPath}?deviceId=${deviceId}`);
 });
 
 // API Thêm tệp từ Thư viện chung vào Playlist của TV
