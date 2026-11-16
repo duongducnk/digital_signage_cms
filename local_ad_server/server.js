@@ -120,6 +120,11 @@ app.get('/api/me', (req, res) => {
     res.json({ success: false });
 });
 
+// api lay gio truc tiep tu server
+app.get('/api/time', (req, res) => {
+    res.json({ success: true, serverTime: Date.now() });
+});
+
 //lay dia chi ip lan cua may tinh server
 function getLocalIpAddress() {
     const interfaces = os.networkInterfaces();
