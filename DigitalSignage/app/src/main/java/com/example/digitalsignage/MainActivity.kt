@@ -98,7 +98,7 @@ class MainActivity : ComponentActivity() {
                     } else {
                         AdsPlayerScreen(
                             //serverBaseUrl = "http://192.168.11.223:3000",
-                            serverBaseUrl = "http://192.168.20.203:3000",
+                            serverBaseUrl = "http://192.168.20.130:3000",
                             deviceId = currentDeviceId,
                             onSettingsClick = {
                                 isSettingMode = true //mo lai man hinh cai dat khi can
@@ -330,7 +330,7 @@ fun AdsPlayerScreen(
 
                     val startMillis = sdf.parse(sched.startTime)?.time ?: 0L
                     val endMillis = sdf.parse(sched.endTime)?.time ?: 0L
-                    val currentMillis = System.currentTimeMillis()
+                    val currentMillis = getCurrentNetworkTime(serverBaseUrl)
 
                     if (currentMillis in startMillis..endMillis && sched.items.isNotEmpty()) {
                         shouldUseScheduled = true
@@ -500,4 +500,21 @@ fun AdsPlayer (
         modifier = Modifier.fillMaxSize()
     )
 
+}
+
+// Hàm lấy thời gian hiện tại (ưu tiên giờ server để tuyệt đối chính xác)
+suspend fun getCurrentNetworkTime(serverBaseUrl: String): Long {
+    return withContext(Dispatchers.IO) {
+        try {
+            val url = URL("$serverBaseUrl/api/time")
+            val connection = url.openConnection() as HttpURLConnection
+            connection.connectTimeout = 3000
+            val response = connection.inputStream.bufferedReader().readText()
+            val json = JSONObject(response)
+            return@withContext json.getLong("serverTime")
+        } catch (e: Exception) {
+            // Nếu mất mạng hoặc lỗi, fallback về giờ local của TV
+            return@withContext System.currentTimeMillis()
+        }
+    }
 }
