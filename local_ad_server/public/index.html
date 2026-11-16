@@ -165,45 +165,70 @@
                         </label>
                     </div>
 
-                    <!-- 2. Cả khối bao gồm cài đặt thời gian và bảng (Sẽ mờ/khóa khi Toggle OFF) -->
-                    <div id="schedContainerWrapper" class="space-y-4 transition-all duration-300">
-                        
-                        <!-- Khung chọn Thời gian -->
-                        <div class="bg-slate-50 dark:bg-[#031118]/40 p-4 rounded-xl border border-slate-200 dark:border-[#0F828C]/30 space-y-3 transition-all duration-300">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                <div>
-                                    <label class="block text-xs text-slate-500 dark:text-cyan-300 mb-1">Thời gian bắt đầu phát:</label>
-                                    <input type="datetime-local" id="schedStartTimeInput" step="60" lang="en-GB" onchange="saveScheduleSettings()" class="w-full bg-white dark:bg-[#031118]/80 border border-slate-200 dark:border-[#0F828C]/40 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-[#A3DC9A]">
-                                </div>
-                                <div>
-                                    <label class="block text-xs text-slate-500 dark:text-cyan-300 mb-1">Thời gian kết thúc:</label>
-                                    <input type="datetime-local" id="schedEndTimeInput" step="60" lang="en-GB" onchange="saveScheduleSettings()" class="w-full bg-white dark:bg-[#031118]/80 border border-slate-200 dark:border-[#0F828C]/40 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-[#A3DC9A]">
+                    <!-- 2. Khung chọn Thời gian hẹn giờ mới trong #schedPlaylistView -->
+                    <div id="schedTimeConfigWrapper" class="bg-slate-50 dark:bg-[#031118]/40 p-4 rounded-xl border border-slate-200 dark:border-[#0F828C]/30 space-y-3 transition-all duration-300">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            
+                            <!-- Thời gian bắt đầu -->
+                            <div>
+                                <label class="block text-xs font-medium text-slate-500 dark:text-cyan-300 mb-1.5">Thời gian bắt đầu phát:</label>
+                                <div class="flex items-center gap-2">
+                                    <input type="date" id="schedStartDate" onchange="saveScheduleSettings()" class="bg-white dark:bg-[#031118]/80 border border-slate-200 dark:border-[#0F828C]/40 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-[#A3DC9A]">
+                                    
+                                    <div class="flex items-center space-x-1">
+                                        <input type="number" id="schedStartHour" min="0" max="23" placeholder="HH" oninput="validateTimeInput(this, 0, 23)" onchange="saveScheduleSettings()" class="w-14 bg-white dark:bg-[#031118]/80 border border-slate-200 dark:border-[#0F828C]/40 rounded-xl px-2 py-2 text-xs text-center text-slate-800 dark:text-white focus:outline-none focus:border-[#A3DC9A]">
+                                        <span class="text-xs text-slate-600 dark:text-slate-300 font-medium">giờ</span>
+                                    </div>
+
+                                    <div class="flex items-center space-x-1">
+                                        <input type="number" id="schedStartMinute" min="0" max="59" placeholder="mm" oninput="validateTimeInput(this, 0, 59)" onchange="saveScheduleSettings()" class="w-14 bg-white dark:bg-[#031118]/80 border border-slate-200 dark:border-[#0F828C]/40 rounded-xl px-2 py-2 text-xs text-center text-slate-800 dark:text-white focus:outline-none focus:border-[#A3DC9A]">
+                                        <span class="text-xs text-slate-600 dark:text-slate-300 font-medium">phút</span>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    
 
-                        <!-- 3. Bảng Danh sách Tệp trong Playlist Phụ (Luôn tương tác được kể cả khi Toggle OFF) -->
-                        <div class="overflow-x-auto bg-white dark:bg-[#065084]/40 p-4 rounded-xl border border-slate-200 dark:border-[#0F828C]/30">
-                            <h3 class="text-xs font-semibold text-slate-600 dark:text-cyan-200 uppercase tracking-wider mb-3">Danh sách tệp phát trong lịch hẹn giờ</h3>
-                            <table class="w-full text-left border-collapse">
-                                <thead>
-                                    <tr class="border-b border-slate-100 dark:border-[#0F828C]/40 text-slate-500 dark:text-cyan-200 text-xs uppercase tracking-wider bg-slate-50/50 dark:bg-transparent">
-                                        <th class="py-3 px-4">ID</th>
-                                        <th class="py-3 px-4">Tiêu đề</th>
-                                        <th class="py-3 px-4">Nguồn gốc</th>
-                                        <th class="py-3 px-4">Loại</th>
-                                        <th class="py-3 px-4">Thời lượng (s)</th>
-                                        <th class="py-3 px-4 text-center">Thao tác</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-slate-100 dark:divide-[#0F828C]/20 text-sm" id="schedPlaylistTableBody">
-                                    <tr><td class="py-6 text-center text-slate-400 dark:text-slate-300 italic" colspan="6">Chưa có tệp nào trong lịch hẹn giờ</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
+                            <!-- Thời gian kết thúc -->
+                            <div>
+                                <label class="block text-xs font-medium text-slate-500 dark:text-cyan-300 mb-1.5">Thời gian kết thúc:</label>
+                                <div class="flex items-center gap-2">
+                                    <input type="date" id="schedEndDate" onchange="saveScheduleSettings()" class="bg-white dark:bg-[#031118]/80 border border-slate-200 dark:border-[#0F828C]/40 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-[#A3DC9A]">
+                                    
+                                    <div class="flex items-center space-x-1">
+                                        <input type="number" id="schedEndHour" min="0" max="23" placeholder="HH" oninput="validateTimeInput(this, 0, 23)" onchange="saveScheduleSettings()" class="w-14 bg-white dark:bg-[#031118]/80 border border-slate-200 dark:border-[#0F828C]/40 rounded-xl px-2 py-2 text-xs text-center text-slate-800 dark:text-white focus:outline-none focus:border-[#A3DC9A]">
+                                        <span class="text-xs text-slate-600 dark:text-slate-300 font-medium">giờ</span>
+                                    </div>
 
+                                    <div class="flex items-center space-x-1">
+                                        <input type="number" id="schedEndMinute" min="0" max="59" placeholder="mm" oninput="validateTimeInput(this, 0, 59)" onchange="saveScheduleSettings()" class="w-14 bg-white dark:bg-[#031118]/80 border border-slate-200 dark:border-[#0F828C]/40 rounded-xl px-2 py-2 text-xs text-center text-slate-800 dark:text-white focus:outline-none focus:border-[#A3DC9A]">
+                                        <span class="text-xs text-slate-600 dark:text-slate-300 font-medium">phút</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
                     </div>
+
+                    <!-- 3. Bảng Danh sách Tệp trong Playlist Phụ (Luôn tương tác được kể cả khi Toggle OFF) -->
+                    <div class="overflow-x-auto bg-white dark:bg-[#065084]/40 p-4 rounded-xl border border-slate-200 dark:border-[#0F828C]/30">
+                        <h3 class="text-xs font-semibold text-slate-600 dark:text-cyan-200 uppercase tracking-wider mb-3">Danh sách tệp phát trong lịch hẹn giờ</h3>
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-slate-100 dark:border-[#0F828C]/40 text-slate-500 dark:text-cyan-200 text-xs uppercase tracking-wider bg-slate-50/50 dark:bg-transparent">
+                                    <th class="py-3 px-4">ID</th>
+                                    <th class="py-3 px-4">Tiêu đề</th>
+                                    <th class="py-3 px-4">Nguồn gốc</th>
+                                    <th class="py-3 px-4">Loại</th>
+                                    <th class="py-3 px-4">Thời lượng (s)</th>
+                                    <th class="py-3 px-4 text-center">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 dark:divide-[#0F828C]/20 text-sm" id="schedPlaylistTableBody">
+                                <tr><td class="py-6 text-center text-slate-400 dark:text-slate-300 italic" colspan="6">Chưa có tệp nào trong lịch hẹn giờ</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    
                 </div>
 
             </div>
@@ -615,8 +640,8 @@
                     const isEnabled = currentScheduledData.enabled || false;
                     
                     document.getElementById('schedEnabledToggle').checked = isEnabled;
-                    document.getElementById('schedStartTimeInput').value = formatDateTime24h(currentScheduledData.startTime);
-                    document.getElementById('schedEndTimeInput').value = formatDateTime24h(currentScheduledData.endTime);
+                    setCustomDateTimeUI('schedStart', currentScheduledData.startTime);
+                    setCustomDateTimeUI('schedEnd', currentScheduledData.endTime);
 
                     updateScheduleUIState(isEnabled);
                     renderScheduledTable(deviceId, currentScheduledData.items || []);
@@ -667,7 +692,7 @@
 
         // Cập nhật giao diện mờ/rõ khối phụ thuộc vào trạng thái bật/tắt toggle
         function updateScheduleUIState(isEnabled) {
-            const wrapper = document.getElementById('schedContainerWrapper');
+            const wrapper = document.getElementById('schedTimeConfigWrapper');
             const statusText = document.getElementById('schedStatusText');
             
             statusText.textContent = isEnabled ? 'Đang bật' : 'Đã tắt';
@@ -687,25 +712,52 @@
             await saveScheduleSettings();
         }
 
-        // Hàm chuẩn hóa chuỗi datetime cho thẻ input datetime-local (YYYY-MM-DDTHH:mm)
-        function formatDateTime24h(dateTimeStr) {
-            if (!dateTimeStr) return '';
-            const dt = new Date(dateTimeStr);
-            if (isNaN(dt.getTime())) return dateTimeStr; // Nếu đã là định dạng chuẩn
-            const year = dt.getFullYear();
-            const month = String(dt.getMonth() + 1).padStart(2, '0');
-            const day = String(dt.getDate()).padStart(2, '0');
-            const hours = String(dt.getHours()).padStart(2, '0');
-            const minutes = String(dt.getMinutes()).padStart(2, '0');
-            return `${year}-${month}-${day}T${hours}:${minutes}`;
+        // Điền dữ liệu từ chuỗi ISO (YYYY-MM-DDTHH:mm) vào các ô input trên giao diện
+        function setCustomDateTimeUI(prefix, isoStr) {
+            const dateEl = document.getElementById(`${prefix}Date`);
+            const hourEl = document.getElementById(`${prefix}Hour`);
+            const minEl = document.getElementById(`${prefix}Minute`);
+
+            if (!isoStr || !isoStr.includes('T')) {
+                dateEl.value = '';
+                hourEl.value = '';
+                minEl.value = '';
+                return;
+            }
+
+            const [datePart, timePart] = isoStr.split('T');
+            const [hourPart, minPart] = timePart.split(':');
+
+            dateEl.value = datePart || '';
+            hourEl.value = hourPart ? parseInt(hourPart, 10) : '';
+            minEl.value = minPart ? parseInt(minPart, 10) : '';
         }
 
-        // Tự động lưu cấu hình lịch khi người dùng tương tác chọn xong thời gian (datetime-local)
-        async function autoSaveScheduleTime() {
-            // Chỉ tự động lưu nếu đang bật toggle để tránh ghi đè dữ liệu rác
-            const isEnabled = document.getElementById('schedEnabledToggle').checked;
-            if (isEnabled) {
-                await saveScheduleSettings();
+        // Lấy giá trị từ các ô input trên giao diện để ghép thành chuỗi gửi cho server
+        function getCustomDateTimeValue(prefix) {
+            const dateVal = document.getElementById(`${prefix}Date`).value;
+            let hourVal = document.getElementById(`${prefix}Hour`).value;
+            let minVal = document.getElementById(`${prefix}Minute`).value;
+
+            if (!dateVal) return ''; // Chưa chọn ngày thì bỏ qua
+
+            // Mặc định là 00 nếu người dùng bỏ trống giờ hoặc phút
+            hourVal = hourVal !== '' ? String(hourVal).padStart(2, '0') : '00';
+            minVal = minVal !== '' ? String(minVal).padStart(2, '0') : '00';
+
+            return `${dateVal}T${hourVal}:${minVal}`;
+        }
+
+        // Hàm tự động chặn và giới hạn giá trị nhập vào không vượt quá min/max
+        function validateTimeInput(inputElement, min, max) {
+            let val = parseInt(inputElement.value, 10);
+            
+            if (isNaN(val)) return; // Nếu xóa trống thì bỏ qua
+
+            if (val > max) {
+                inputElement.value = max; // Nếu vượt quá mức tối đa thì ép về mức tối đa
+            } else if (val < min) {
+                inputElement.value = min; // Nếu nhỏ hơn mức tối thiểu thì ép về mức tối thiểu
             }
         }
 
@@ -715,8 +767,8 @@
             if (!deviceId) return;
 
             const enabled = document.getElementById('schedEnabledToggle').checked;
-            const startTime = document.getElementById('schedStartTimeInput').value;
-            const endTime = document.getElementById('schedEndTimeInput').value;
+            const startTime = getCustomDateTimeValue('schedStart');
+            const endTime = getCustomDateTimeValue('schedEnd');
 
             try {
                 await fetch('/api/device/schedule', {

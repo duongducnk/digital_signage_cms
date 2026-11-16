@@ -108,17 +108,46 @@
                         </label>
                     </div>
 
-                    <!-- 2. Khung chọn Thời gian -->
+                    <!-- 2. Khung chọn Thời gian (Nhập trực tiếp, cố định chữ giờ/phút bên ngoài) -->
                     <div id="schedTimeConfigWrapper" class="bg-slate-50 dark:bg-[#031118]/40 p-4 rounded-xl border border-slate-200 dark:border-[#0F828C]/30 space-y-3 transition-all duration-300">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            
+                            <!-- Thời gian bắt đầu -->
                             <div>
-                                <label class="block text-xs text-slate-500 dark:text-cyan-300 mb-1">Thời gian bắt đầu phát (24h):</label>
-                                <input type="datetime-local" id="schedStartTimeInput" step="60" lang="en-GB" onchange="saveScheduleSettings()" class="w-full bg-white dark:bg-[#031118]/80 border border-slate-200 dark:border-[#0F828C]/40 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-[#A3DC9A]">
+                                <label class="block text-xs font-medium text-slate-500 dark:text-cyan-300 mb-1.5">Thời gian bắt đầu phát:</label>
+                                <div class="flex items-center gap-2">
+                                    <input type="date" id="schedStartDate" onchange="saveScheduleSettings()" class="bg-white dark:bg-[#031118]/80 border border-slate-200 dark:border-[#0F828C]/40 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-[#A3DC9A]">
+                                    
+                                    <div class="flex items-center space-x-1">
+                                        <input type="number" id="schedStartHour" min="0" max="23" placeholder="HH" oninput="validateTimeInput(this, 0, 23)" onchange="saveScheduleSettings()" class="w-14 bg-white dark:bg-[#031118]/80 border border-slate-200 dark:border-[#0F828C]/40 rounded-xl px-2 py-2 text-xs text-center text-slate-800 dark:text-white focus:outline-none focus:border-[#A3DC9A]">
+                                        <span class="text-xs text-slate-600 dark:text-slate-300 font-medium">giờ</span>
+                                    </div>
+
+                                    <div class="flex items-center space-x-1">
+                                        <input type="number" id="schedStartMinute" min="0" max="59" placeholder="mm" oninput="validateTimeInput(this, 0, 59)" onchange="saveScheduleSettings()" class="w-14 bg-white dark:bg-[#031118]/80 border border-slate-200 dark:border-[#0F828C]/40 rounded-xl px-2 py-2 text-xs text-center text-slate-800 dark:text-white focus:outline-none focus:border-[#A3DC9A]">
+                                        <span class="text-xs text-slate-600 dark:text-slate-300 font-medium">phút</span>
+                                    </div>
+                                </div>
                             </div>
+
+                            <!-- Thời gian kết thúc -->
                             <div>
-                                <label class="block text-xs text-slate-500 dark:text-cyan-300 mb-1">Thời gian kết thúc (24h):</label>
-                                <input type="datetime-local" id="schedEndTimeInput" step="60" lang="en-GB" onchange="saveScheduleSettings()" class="w-full bg-white dark:bg-[#031118]/80 border border-slate-200 dark:border-[#0F828C]/40 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-[#A3DC9A]">
+                                <label class="block text-xs font-medium text-slate-500 dark:text-cyan-300 mb-1.5">Thời gian kết thúc:</label>
+                                <div class="flex items-center gap-2">
+                                    <input type="date" id="schedEndDate" onchange="saveScheduleSettings()" class="bg-white dark:bg-[#031118]/80 border border-slate-200 dark:border-[#0F828C]/40 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-[#A3DC9A]">
+                                    
+                                    <div class="flex items-center space-x-1">
+                                        <input type="number" id="schedEndHour" min="0" max="23" placeholder="HH" oninput="validateTimeInput(this, 0, 23)" onchange="saveScheduleSettings()" class="w-14 bg-white dark:bg-[#031118]/80 border border-slate-200 dark:border-[#0F828C]/40 rounded-xl px-2 py-2 text-xs text-center text-slate-800 dark:text-white focus:outline-none focus:border-[#A3DC9A]">
+                                        <span class="text-xs text-slate-600 dark:text-slate-300 font-medium">giờ</span>
+                                    </div>
+
+                                    <div class="flex items-center space-x-1">
+                                        <input type="number" id="schedEndMinute" min="0" max="59" placeholder="mm" oninput="validateTimeInput(this, 0, 59)" onchange="saveScheduleSettings()" class="w-14 bg-white dark:bg-[#031118]/80 border border-slate-200 dark:border-[#0F828C]/40 rounded-xl px-2 py-2 text-xs text-center text-slate-800 dark:text-white focus:outline-none focus:border-[#A3DC9A]">
+                                        <span class="text-xs text-slate-600 dark:text-slate-300 font-medium">phút</span>
+                                    </div>
+                                </div>
                             </div>
+
                         </div>
                     </div>
 
@@ -178,7 +207,7 @@
                             <input class="w-full bg-slate-50 dark:bg-[#031118]/60 border border-slate-200 dark:border-[#0F828C]/40 rounded-xl px-3 py-2 text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#A3DC9A] dark:focus:border-cyan-300 transition text-xs" type="text" name="title" id="managerMediaTitleInput" placeholder="Tiêu đề tệp...">
                         </div>
                         <div>
-                            <input class="w-full bg-slate-50 dark:bg-[#031118]/60 border border-slate-200 dark:border-[#0F828C]/40 rounded-xl px-3 py-2 text-slate-800 dark:text-white focus:outline-none focus:border-[#A3DC9A] dark:focus:border-cyan-300 transition text-xs" type="number" name="duration" id="managerMediaDurationInput" value="10" min="1" placeholder="Thời lượng ảnh (giây)">
+                            <input class="w-full bg-slate-50 dark:bg-[#031118]/60 border border-slate-200 dark:border-[#0F828C]/40 rounded-xl px-3 py-2 text-slate-800 dark:text-white focus:outline-none focus:border-[#A3DC9A] dark:focus:border-cyan-300 transition text-xs" type="number" name="duration" id="managerMediaDurationInput" min="1" placeholder="Thời lượng ảnh (giây)">
                         </div>
                         <button class="w-full bg-[#A3DC9A] dark:bg-[#0F828C] hover:bg-[#92cb87] dark:hover:bg-[#0d6d76] text-slate-900 dark:text-white font-semibold px-4 py-2 rounded-xl transition shadow-sm text-sm" type="submit">
                             Tải lên tệp riêng
@@ -299,18 +328,6 @@
             }
         }
 
-        function formatDateTime24h(dateTimeStr) {
-            if (!dateTimeStr) return '';
-            const dt = new Date(dateTimeStr);
-            if (isNaN(dt.getTime())) return dateTimeStr;
-            const year = dt.getFullYear();
-            const month = String(dt.getMonth() + 1).padStart(2, '0');
-            const day = String(dt.getDate()).padStart(2, '0');
-            const hours = String(dt.getHours()).padStart(2, '0');
-            const minutes = String(dt.getMinutes()).padStart(2, '0');
-            return `${year}-${month}-${day}T${hours}:${minutes}`;
-        }
-
         function updateScheduleUIState(isEnabled) {
             const wrapper = document.getElementById('schedTimeConfigWrapper');
             const statusText = document.getElementById('schedStatusText');
@@ -328,12 +345,61 @@
             await saveScheduleSettings();
         }
 
+        // Điền dữ liệu từ chuỗi ISO (YYYY-MM-DDTHH:mm) vào các ô input trên giao diện
+        function setCustomDateTimeUI(prefix, isoStr) {
+            const dateEl = document.getElementById(`${prefix}Date`);
+            const hourEl = document.getElementById(`${prefix}Hour`);
+            const minEl = document.getElementById(`${prefix}Minute`);
+
+            if (!isoStr || !isoStr.includes('T')) {
+                dateEl.value = '';
+                hourEl.value = '';
+                minEl.value = '';
+                return;
+            }
+
+            const [datePart, timePart] = isoStr.split('T');
+            const [hourPart, minPart] = timePart.split(':');
+
+            dateEl.value = datePart || '';
+            hourEl.value = hourPart ? parseInt(hourPart, 10) : '';
+            minEl.value = minPart ? parseInt(minPart, 10) : '';
+        }
+
+        // Lấy giá trị từ các ô input trên giao diện để ghép thành chuỗi gửi cho server
+        function getCustomDateTimeValue(prefix) {
+            const dateVal = document.getElementById(`${prefix}Date`).value;
+            let hourVal = document.getElementById(`${prefix}Hour`).value;
+            let minVal = document.getElementById(`${prefix}Minute`).value;
+
+            if (!dateVal) return ''; // Chưa chọn ngày thì bỏ qua
+
+            // Mặc định là 00 nếu người dùng bỏ trống giờ hoặc phút
+            hourVal = hourVal !== '' ? String(hourVal).padStart(2, '0') : '00';
+            minVal = minVal !== '' ? String(minVal).padStart(2, '0') : '00';
+
+            return `${dateVal}T${hourVal}:${minVal}`;
+        }
+
+        // Hàm tự động chặn và giới hạn giá trị nhập vào không vượt quá min/max
+        function validateTimeInput(inputElement, min, max) {
+            let val = parseInt(inputElement.value, 10);
+            
+            if (isNaN(val)) return; // Nếu xóa trống thì bỏ qua
+
+            if (val > max) {
+                inputElement.value = max; // Nếu vượt quá mức tối đa thì ép về mức tối đa
+            } else if (val < min) {
+                inputElement.value = min; // Nếu nhỏ hơn mức tối thiểu thì ép về mức tối thiểu
+            }
+        }
+
         async function saveScheduleSettings() {
             const deviceId = formDeviceId.value;
             if (!deviceId) return;
             const enabled = document.getElementById('schedEnabledToggle').checked;
-            const startTime = document.getElementById('schedStartTimeInput').value;
-            const endTime = document.getElementById('schedEndTimeInput').value;
+            const startTime = getCustomDateTimeValue('schedStart');
+            const endTime = getCustomDateTimeValue('schedEnd');
 
             try {
                 await fetch('/api/device/schedule', {
@@ -394,8 +460,8 @@
                     const isEnabled = sched.enabled || false;
                     
                     document.getElementById('schedEnabledToggle').checked = isEnabled;
-                    document.getElementById('schedStartTimeInput').value = formatDateTime24h(sched.startTime);
-                    document.getElementById('schedEndTimeInput').value = formatDateTime24h(sched.endTime);
+                    setCustomDateTimeUI('schedStart', sched.startTime);
+                    setCustomDateTimeUI('schedEnd', sched.endTime);
 
                     updateScheduleUIState(isEnabled);
                     renderScheduledTable(deviceId, sched.items || []);

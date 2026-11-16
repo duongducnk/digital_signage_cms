@@ -5,32 +5,51 @@
       "displayName": "00",
       "playlist": [
         {
-          "id": "1793862149706-401",
+          "id": "1794793404979-306",
+          "mediaId": "media_1794793364426_211",
           "title": "hi3.png",
           "type": "image",
-          "url": "http://192.168.23.148:3000/media/1793862149698-hi3.png",
+          "url": "http://192.168.20.130:3000/media/1794793364409-hi3.png",
           "duration": 10,
-          "isHidden": false
+          "isHidden": false,
+          "origin": "admin_shared",
+          "canDelete": false
         },
         {
-          "id": "1793862159286-975",
+          "id": "1794793404983-413",
+          "mediaId": "media_1794793370601_117",
           "title": "sample_10s_720p.mp4",
           "type": "video",
-          "url": "http://192.168.23.148:3000/media/1793862159147-sample_10s_720p.mp4",
+          "url": "http://192.168.20.130:3000/media/1794793369945-sample_10s_720p.mp4",
           "duration": 0,
-          "isHidden": false
+          "isHidden": false,
+          "origin": "admin_shared",
+          "canDelete": false
         }
       ],
       "scheduledPlaylist": {
-        "enabled": false,
+        "enabled": true,
+        "title": "Lịch phát hẹn giờ",
+        "startTime": "2026-11-13T20:18",
+        "endTime": "2026-11-13T20:19",
         "items": [
           {
-            "id": "sched_1794013298009_568",
-            "mediaId": "media_1793954408292_893",
-            "title": "hi3.png",
+            "id": "sched_1794793436449_641",
+            "mediaId": "media_1794793392702_340",
+            "title": "zzz.png",
             "type": "image",
-            "url": "http://192.168.23.153:3000/media/1793954408285-hi3.png",
+            "url": "http://192.168.20.130:3000/media/1794793392699-zzz.png",
             "duration": 10,
+            "isHidden": false,
+            "origin": "admin_shared"
+          },
+          {
+            "id": "sched_1794793436455_399",
+            "mediaId": "media_1794793396534_78",
+            "title": "sample_15s_720p.mp4",
+            "type": "video",
+            "url": "http://192.168.20.130:3000/media/1794793396433-sample_15s_720p.mp4",
+            "duration": 0,
             "isHidden": false,
             "origin": "admin_shared"
           }
@@ -98,14 +117,24 @@
         "endTime": "2020-08-25T10:23",
         "items": [
           {
-            "id": "sched_1794015172113_23",
-            "mediaId": "media_1793954408292_893",
-            "title": "hi3.png",
+            "id": "sched_1794029315620_496",
+            "mediaId": "media_1794022088878_134",
+            "title": "zzz.png",
             "type": "image",
-            "url": "http://192.168.23.153:3000/media/1793954408285-hi3.png",
+            "url": "http://192.168.20.203:3000/media/1794022088860-zzz.png",
             "duration": 10,
             "isHidden": false,
             "origin": "admin_shared"
+          },
+          {
+            "id": "1794549368586-315",
+            "title": "sample_15s_720p.mp4",
+            "type": "video",
+            "url": "http://192.168.22.227:3000/media/1794549368497-sample_15s_720p.mp4",
+            "duration": 0,
+            "isHidden": false,
+            "origin": "manager_custom",
+            "canDelete": true
           }
         ]
       }
@@ -125,17 +154,31 @@
   },
   "mediaLibrary": [
     {
-      "id": "media_1793954408292_893",
+      "id": "media_1794793364426_211",
       "title": "hi3.png",
       "type": "image",
-      "url": "http://192.168.23.153:3000/media/1793954408285-hi3.png",
+      "url": "http://192.168.20.130:3000/media/1794793364409-hi3.png",
       "duration": 10
     },
     {
-      "id": "media_1793954413397_672",
+      "id": "media_1794793370601_117",
       "title": "sample_10s_720p.mp4",
       "type": "video",
-      "url": "http://192.168.23.153:3000/media/1793954413380-sample_10s_720p.mp4",
+      "url": "http://192.168.20.130:3000/media/1794793369945-sample_10s_720p.mp4",
+      "duration": 0
+    },
+    {
+      "id": "media_1794793392702_340",
+      "title": "zzz.png",
+      "type": "image",
+      "url": "http://192.168.20.130:3000/media/1794793392699-zzz.png",
+      "duration": 10
+    },
+    {
+      "id": "media_1794793396534_78",
+      "title": "sample_15s_720p.mp4",
+      "type": "video",
+      "url": "http://192.168.20.130:3000/media/1794793396433-sample_15s_720p.mp4",
       "duration": 0
     }
   ]

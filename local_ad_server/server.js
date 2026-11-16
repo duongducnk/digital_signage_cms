@@ -625,7 +625,7 @@ app.delete('/api/delete-device/:deviceId', requireAdmin, async (req, res) => {
 });
 
 // API Cập nhật hoặc Bật/Tắt lịch phát phụ (Scheduled Playlist) cho thiết bị (Chỉ Admin)
-app.post('/api/device/schedule', requireAuth, requireAdmin, async (req, res) => {
+app.post('/api/device/schedule', requireAuth, async (req, res) => {
     const { deviceId, enabled, title, startTime, endTime, items } = req.body;
     
     if (!deviceId) {
