@@ -2,7 +2,7 @@
   {
     "id": "u1",
     "username": "admin",
-    "passwordHash": "$2b$10$JLPgYC9oujKRfOAsh0kDo.qTX3V/TuUuelsN2E/YHNHYDvCQVSPY6", 
+    "passwordHash": "$2b$10$JLPgYC9oujKRfOAsh0kDo.qTX3V/TuUuelsN2E/YHNHYDvCQVSPY6",
     "role": "admin"
   },
   {
@@ -10,6 +10,29 @@
     "username": "manager",
     "passwordHash": "$2b$10$JLPgYC9oujKRfOAsh0kDo.qTX3V/TuUuelsN2E/YHNHYDvCQVSPY6",
     "role": "manager",
-    "allowedDevices": ["tv_00", "test"]
+    "allowedDevices": [
+      "tv_00",
+      "test"
+    ]
+  },
+  {
+    "id": "m_1794908281592",
+    "username": "manager2",
+    "passwordHash": "$2b$10$jeDYtA1dFcTzL2DnnrMSGu84kUNVmppGD1yOp0d7TOxvBeMz3znVO",
+    "role": "manager",
+    "allowedDevices": [
+      "duoc1",
+      "duoc2"
+    ]
+  },
+  {
+    "id": "m_1794987381474",
+    "username": "manager3",
+    "passwordHash": "$2b$10$BMSMazybCEms.xfh9rlI6el4sTh9v7/oXFk8yNlji3XAaYSHFGvt2",
+    "role": "manager",
+    "allowedDevices": [
+      "khamyc1",
+      "khamyc2"
+    ]
   }
-] 
+]
