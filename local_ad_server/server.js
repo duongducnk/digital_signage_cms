@@ -61,6 +61,16 @@ async function readUsers() {
     }
     return [];
 }
+
+// Ghi danh sách user ra file users.json
+function saveUsers(users) {
+    try {
+        fs.writeFileSync(usersFilePath, JSON.stringify(users, null, 2), 'utf8');
+    } catch (e) {
+        console.error("Lỗi ghi file users.json:", e);
+    }
+}
+
 //kiem tra da dang nhap chua
 function requireAuth(req, res, next) {
     if (req.session && req.session.user) {
@@ -803,6 +813,104 @@ app.delete('/api/playlist/:deviceId/scheduled/:id', requireAuth, async (req, res
     } catch (error) {
         console.error("Lỗi ghi file khi xóa tệp lịch hẹn giờ:", error);
         res.status(500).json({ success: false, message: "Lỗi hệ thống khi lưu dữ liệu" });
+    }
+});
+
+// api quan ly tai khoan manager-----------------------------------------------
+
+// 1. Lấy danh sách tài khoản Manager (Chỉ Admin)
+app.get('/api/managers', requireAdmin, async (req, res) => {
+    try {
+        const users = await readUsers(); // Hàm đọc file users.json
+        const managers = users.filter(u => u.role === 'manager').map(m => ({
+            id: m.id,
+            username: m.username,
+            allowedDevices: m.allowedDevices || []
+        }));
+        res.json({ success: true, managers });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Lỗi đọc danh sách manager' });
+    }
+});
+
+// 2. Tạo tài khoản Manager mới (Chỉ Admin)
+app.post('/api/managers', requireAdmin, async (req, res) => {
+    try {
+        const { username, password, allowedDevices } = req.body;
+        if (!username || !password) {
+            return res.status(400).json({ success: false, message: 'Vui lòng nhập đầy đủ tên và mật khẩu' });
+        }
+
+        const users = await readUsers();
+        if (users.find(u => u.username === username)) {
+            return res.status(400).json({ success: false, message: 'Tên đăng nhập đã tồn tại' });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const newManager = {
+            id: 'm_' + Date.now(),
+            username,
+            passwordHash: hashedPassword,
+            role: 'manager',
+            allowedDevices: allowedDevices || []
+        };
+
+        users.push(newManager);
+        await saveUsers(users); // Hàm ghi lại file users.json
+        res.json({ success: true, message: 'Tạo tài khoản manager thành công' });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Lỗi tạo tài khoản manager' });
+    }
+});
+
+// 3. Xóa tài khoản Manager (Chỉ Admin)
+app.delete('/api/managers/:id', requireAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        let users = await readUsers();
+        users = users.filter(u => u.id !== id);
+        await saveUsers(users);
+        res.json({ success: true, message: 'Đã xóa tài khoản manager' });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Lỗi xoá tài khoản manager' });
+    }
+});
+
+// 4. API Cập nhật thông tin Manager (Phân quyền thiết bị & Đổi mật khẩu tùy chọn)
+app.post('/api/manager/update', requireAuth, async (req, res) => {
+    try {
+        const { managerId, newPassword, allowedDevices } = req.body;
+        const currentUser = req.session.user;
+
+        // Kiểm tra quyền: Phải là admin hoặc chính manager đó
+        if (currentUser.role !== 'admin' && currentUser.id !== managerId) {
+            return res.status(403).json({ success: false, message: 'Không có quyền thực hiện' });
+        }
+
+        let users = await readUsers();
+        const userIndex = users.findIndex(u => u.id === managerId);
+        if (userIndex === -1) {
+            return res.status(404).json({ success: false, message: 'Không tìm thấy tài khoản' });
+        }
+
+        // Cập nhật danh sách thiết bị được phân quyền (nếu có truyền lên)
+        if (Array.isArray(allowedDevices)) {
+            users[userIndex].allowedDevices = allowedDevices;
+        }
+
+        // Nếu có nhập mật khẩu mới thì tiến hành mã hóa và cập nhật
+        if (newPassword && newPassword.trim().length > 0) {
+            if (newPassword.trim().length < 6) {
+                return res.status(400).json({ success: false, message: 'Mật khẩu mới phải có ít nhất 6 ký tự' });
+            }
+            users[userIndex].passwordHash = await bcrypt.hash(newPassword.trim(), 10);
+        }
+
+        await saveUsers(users);
+        res.json({ success: true, message: 'Cập nhật tài khoản manager thành công' });
+    } catch (err) {
+        console.error("Lỗi cập nhật manager:", err);
+        res.status(500).json({ success: false, message: 'Lỗi server' });
     }
 });
 

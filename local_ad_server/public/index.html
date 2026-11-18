@@ -18,15 +18,27 @@
 <body class="bg-[#FFFADC] dark:bg-[#031118] text-slate-800 dark:text-slate-100 min-h-screen p-6 transition-colors duration-300">
 
     <!-- Header -->
-    <header class="flex justify-between items-center bg-white dark:bg-[#065084] px-6 py-4 rounded-2xl border border-[#A3DC9A]/60 dark:border-[#0F828C]/40 shadow-md transition-colors duration-300 mb-8">
+    <header class="flex flex-col md:flex-row justify-between items-center bg-white dark:bg-[#065084] px-6 py-4 rounded-2xl border border-[#A3DC9A]/60 dark:border-[#0F828C]/40 shadow-md transition-colors duration-300 mb-8 gap-4">
         <div class="flex items-center space-x-3">
             <span class="text-2xl">📺</span>
             <h1 class="text-xl font-bold tracking-wide text-slate-800 dark:text-white">
-                Quản lý quảng cáo TV
+                Hệ thống quản lý quảng cáo TV
                 <span class="bg-[#A3DC9A] dark:bg-[#0F828C] text-slate-900 dark:text-white text-xs px-2.5 py-1 rounded-full uppercase ml-2 font-semibold">
                     ADMIN
                 </span>
             </h1>
+        </div>
+
+        <!-- THANH CHUYỂN ĐỔI 2 TAB LỚN NGAY TẠI HEADER -->
+        <div class="flex items-center space-x-8 border-b border-slate-200 dark:border-[#0F828C]/30 pb-0">
+            <button id="mainTabTV" onclick="switchMainWorkspace('tv')" class="pb-3 text-xs font-bold transition-all duration-200 flex items-center space-x-2 border-b-2 text-slate-400 dark:text-cyan-400/60 border-transparent hover:text-slate-700 dark:hover:text-cyan-300">
+                <span class="text-base">📺</span>
+                <span>QUẢN LÝ PLAYLIST TV</span>
+            </button>
+            <button id="mainTabManager" onclick="switchMainWorkspace('manager')" class="pb-3 text-xs font-bold transition-all duration-200 flex items-center space-x-2 border-b-2 text-slate-400 dark:text-cyan-400/60 border-transparent hover:text-slate-700 dark:hover:text-cyan-300">
+                <span class="text-base">👥</span>
+                <span>QUẢN LÝ TÀI KHOẢN MANAGER</span>
+            </button>
         </div>
 
         <div class="flex items-center space-x-3">
@@ -43,11 +55,14 @@
         </div>
     </header>
     
+    <!-- ========================================================== -->
+    <!-- TAB 1: KHU VỰC QUẢN LÝ PLAYLIST TV (Hiển thị sidebar TV) -->
+    <!-- ========================================================== -->
     <!-- Main Container -->
-    <div class="flex flex-col lg:flex-row gap-6">
+    <div id="workspaceTV" class="flex flex-col lg:flex-row gap-6">
         
         <!-- COT TRAI: Sidebar danh sách TV -->
-        <div class="w-full lg:w-1/4 bg-white dark:bg-[#065084]/60 backdrop-blur p-5 rounded-2xl border border-[#A3DC9A]/60 dark:border-[#0F828C]/30 shadow-md dark:shadow-xl h-fit transition-colors duration-300">
+        <div id="leftSidebarTV" class="w-full lg:w-1/4 bg-white dark:bg-[#065084]/60 backdrop-blur p-5 rounded-2xl border border-[#A3DC9A]/60 dark:border-[#0F828C]/30 shadow-md dark:shadow-xl h-fit transition-colors duration-300">
             <div class="flex justify-between items-center mb-3">
                 <h2 class="text-base font-semibold text-slate-700 dark:text-cyan-200">Danh sách TV</h2>
                 <span class="text-xs bg-[#A3DC9A]/40 dark:bg-[#0F828C] text-slate-700 dark:text-white px-2 py-0.5 rounded-full font-medium"
@@ -57,7 +72,7 @@
             </div>
 
             <!-- BỘ LỌC TÌM KIẾM & PHÂN NHÓM TẦNG -->
-             <div class="space-y-2 mb-4">
+            <div class="space-y-2 mb-4">
                 <!-- Ô tìm kiếm theo tên/ID -->
                 <input class="w-full bg-slate-50 dark:bg-[#031118]/60 border border-slate-200 dark:border-[#0F828C]/40 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#A3DC9A] dark:focus:border-cyan-300 transition"
                     type="text" id="searchDeviceInput" oninput="filterDeviceList()" placeholder="🔍 Tìm kiếm TV...">
@@ -77,7 +92,7 @@
             </div>
         </div>
 
-        <!-- COT PHAI: Nội dung chính -->
+        <!-- COT PHAI: Nội dung quản lý playlist -->
         <div class="flex-1 space-y-6">
             
             <!-- Playlist Card -->
@@ -108,7 +123,7 @@
                 </div>  
             </div> -->
 
-            <!-- Playlist Container (Chia Tab Quản Lý) -->
+            <!-- Playlist Container (Chia Tab Quản Lý / hẹn giờ) -->
             <div class="bg-white dark:bg-[#065084]/60 backdrop-blur p-6 rounded-2xl border border-[#A3DC9A]/60 dark:border-[#0F828C]/30 shadow-md dark:shadow-xl transition-colors duration-300">
                 
                 <!-- Header Card & Tab Bar -->
@@ -311,7 +326,130 @@
         </div>
     </div>
     
+    <!-- ========================================================== -->
+    <!-- TAB 2: KHU VỰC QUẢN LÝ TÀI KHOẢN MANAGER (Layout 2 cột riêng biệt) -->
+    <!-- ========================================================== -->
+    <div id="workspaceManager" class="hidden flex flex-col lg:flex-row gap-6 w-full">
+        
+        <!-- CỘT TRÁI TAB MANAGER: Danh sách Manager & Tìm kiếm -->
+        <div class="w-full lg:w-1/4 bg-white dark:bg-[#065084]/65 backdrop-blur p-5 rounded-2xl border border-[#A3DC9A]/60 dark:border-[#0F828C]/30 shadow-md dark:shadow-xl h-fit transition-colors duration-300">
+            <div class="flex justify-between items-center mb-3">
+                <h2 class="text-base font-semibold text-slate-700 dark:text-cyan-200">Danh sách Manager</h2>
+                <div class="flex items-center space-x-2">
+                    <span class="text-xs bg-[#A3DC9A]/40 dark:bg-[#0F828C] text-slate-700 dark:text-white px-2 py-0.5 rounded-full font-medium" id="managerCountBadge">
+                        0 Manager
+                    </span>
+                    <button onclick="openAddManagerModal()" class="bg-[#A3DC9A] dark:bg-[#0F828C] text-slate-900 dark:text-white px-2.5 py-1 rounded-xl text-xs font-semibold transition hover:opacity-90 flex items-center gap-1">
+                        ➕ Thêm mới
+                    </button>
+                </div>
+                
+            </div>
 
+            <div class="space-y-2 mb-4">
+                <input class="w-full bg-slate-50 dark:bg-[#031118]/60 border border-slate-200 dark:border-[#0F828C]/40 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#A3DC9A] dark:focus:border-cyan-300 transition"
+                    type="text" id="searchManagerInput" oninput="filterManagerList()" placeholder="🔍 Tìm kiếm Manager...">
+            </div>
+
+            <div class="space-y-2.5 max-h-[400px] overflow-y-auto pr-1" id="managerSidebarListContainer">
+                <p class="text-slate-400 dark:text-slate-300 text-xs italic text-center py-2">Đang tải...</p>
+            </div>
+        </div>
+
+        <!-- CỘT PHẢI TAB MANAGER: Chi tiết thông tin, đổi mật khẩu, phân quyền thiết bị & form thêm mới -->
+        <div class="flex-1 space-y-6">
+            
+            <!-- Thẻ Chi tiết & Cấu hình Manager đang chọn -->
+            <div class="bg-white dark:bg-[#065084]/60 backdrop-blur p-6 rounded-2xl border border-[#A3DC9A]/60 dark:border-[#0F828C]/30 shadow-md dark:shadow-xl transition-colors duration-300">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 border-b border-slate-200 dark:border-[#0F828C]/40 pb-4">
+                    <div>
+                        <h2 class="text-lg font-semibold text-slate-800 dark:text-white flex items-center gap-2">
+                            Thông tin tài khoản: 
+                            <span class="text-emerald-700 dark:text-[#0F828C] bg-[#A3DC9A]/30 dark:bg-cyan-950/60 px-3 py-1 rounded-xl font-bold" id="labelActiveManager">--</span>
+                        </h2>
+                    </div>
+                    <button onclick="deleteActiveManager()" class="bg-red-50 dark:bg-red-500/20 hover:bg-red-100 dark:hover:bg-red-500/30 text-red-600 dark:text-red-300 border border-red-200 dark:border-red-500/30 px-3 py-1.5 rounded-xl text-xs font-semibold transition">
+                        🗑️ Xóa tài khoản này
+                    </button>
+                </div>
+
+                <form id="updateManagerForm" onsubmit="saveManagerChanges(event)" class="space-y-4">
+                    <input type="hidden" id="selectedManagerId">
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                        <!-- Mật khẩu mới có nút ẩn/hiện ký tự -->
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 dark:text-cyan-200 mb-1">Mật khẩu mới (Bỏ trống nếu không đổi):</label>
+                            <div class="relative">
+                                <input type="password" id="detailManagerPassword" placeholder="Nhập mật khẩu mới..." class="w-full bg-slate-50 dark:bg-[#031118]/60 border border-slate-200 dark:border-[#0F828C]/40 rounded-xl px-3 py-2 pr-10 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-[#A3DC9A]">
+                                <button type="button" onclick="togglePasswordVisibility()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-white text-xs">
+                                    👁️
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 dark:text-cyan-200 mb-2">Phân quyền thiết bị TV được quản lý:</label>
+                        <div id="managerDevicesCheckboxContainer" class="grid grid-cols-2 sm:grid-cols-3 gap-2 bg-slate-50 dark:bg-[#031118]/40 p-3 rounded-xl border border-slate-200 dark:border-[#0F828C]/30 max-h-[150px] overflow-y-auto">
+                            <span class="text-xs text-slate-400 italic">Đang tải danh sách TV...</span>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end pt-2">
+                        <button type="submit" class="bg-[#A3DC9A] dark:bg-[#0F828C] hover:opacity-90 text-slate-900 dark:text-white font-semibold px-6 py-2 rounded-xl text-xs transition shadow-sm">
+                            Lưu thay đổi
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- POPUP THÊM MANAGER MỚI -->
+    <div id="addManagerModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-[#065084] p-6 rounded-2xl border border-[#A3DC9A]/60 dark:border-[#0F828C]/40 shadow-2xl w-full max-w-md space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-200 dark:border-[#0F828C]/40 pb-3">
+                <h3 class="text-base font-bold text-slate-800 dark:text-white">➕ Thêm tài khoản Manager mới</h3>
+                <button onclick="closeAddManagerModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white text-lg">✕</button>
+            </div>
+
+            <form id="addManagerForm" onsubmit="submitNewManagerWithDevices(event)" class="space-y-3">
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 dark:text-cyan-200 mb-1">Tên đăng nhập:</label>
+                    <input type="text" id="modalNewUsername" required placeholder="VD: manager_tang2" class="w-full bg-slate-50 dark:bg-[#031118]/60 border border-slate-200 dark:border-[#0F828C]/40 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-[#A3DC9A]">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 dark:text-cyan-200 mb-1">Mật khẩu:</label>
+                    <div class="relative">
+                        <input type="password" id="modalNewPassword" required placeholder="Nhập mật khẩu..." class="w-full bg-slate-50 dark:bg-[#031118]/60 border border-slate-200 dark:border-[#0F828C]/40 rounded-xl px-3 py-2 pr-10 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-[#A3DC9A]">
+                        <button type="button" onclick="toggleModalPasswordVisibility()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-white text-xs">
+                            👁️
+                        </button>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 dark:text-cyan-200 mb-2">Phân quyền thiết bị TV ban đầu:</label>
+                    <div id="modalDevicesCheckboxContainer" class="grid grid-cols-2 gap-2 bg-slate-50 dark:bg-[#031118]/40 p-3 rounded-xl border border-slate-200 dark:border-[#0F828C]/30 max-h-[120px] overflow-y-auto">
+                        <!-- Checkbox TV sẽ được render động qua JS -->
+                    </div>
+                </div>
+
+                <div class="flex justify-end space-x-2 pt-2">
+                    <button type="button" onclick="closeAddManagerModal()" class="bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 px-4 py-2 rounded-xl text-xs font-semibold transition">Hủy</button>
+                    <button type="submit" class="bg-[#A3DC9A] dark:bg-[#0F828C] text-slate-900 dark:text-white font-semibold px-5 py-2 rounded-xl text-xs transition">Tạo tài khoản</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ========================================================== -->
+    <!-- SCRIPTS XỬ LÝ LOGIC -->
+    <!-- ========================================================== -->
     <script>
         const htmlElement = document.documentElement;
         const themeIcon = document.getElementById('themeIcon');
@@ -320,7 +458,7 @@
         //dong bo device id giua input va form upload
         //const inputDeviceId = document.getElementById('currentDeviceId');
         const formDeviceId = document.getElementById('formDeviceId');
-        const labelDevice = document.getElementById('labelDevice')
+        const labelDevice = document.getElementById('labelDevice');
         const deviceListContainer = document.getElementById('deviceListContainer');
         const mediaPoolContainer = document.getElementById('mediaPoolContainer');
         
@@ -329,6 +467,9 @@
 
         // Biến toàn cục lưu trữ thông tin Playlist hẹn giờ hiện tại
         let currentScheduledData = { enabled: false, items: [] };
+
+        let rawManagersData = [];
+        let activeManagerId = null;
 
         //lay tham so tren url
         function getQueryParam(param) {
@@ -353,6 +494,35 @@
         async function logout() {
             await fetch('/api/logout');
             window.location.href = '/login.html';
+        }
+
+        // CHUYỂN ĐỔI 2 TAB LỚN Ở HEADER
+        function switchMainWorkspace(tab) {
+            const wsTV = document.getElementById('workspaceTV');
+            const wsManager = document.getElementById('workspaceManager');
+            const tabTV = document.getElementById('mainTabTV');
+            const tabManager = document.getElementById('mainTabManager');
+
+            // Lưu trạng thái tab hiện tại vào localStorage
+            localStorage.setItem('activeWorkspaceTab', tab);
+
+            // Style active và inactive cho kiểu gạch chân
+            const activeStyle = "pb-3 text-xs font-bold transition-all duration-200 flex items-center space-x-2 border-b-2 border-emerald-600 dark:border-[#0F828C] text-slate-800 dark:text-white";
+            const inactiveStyle = "pb-3 text-xs font-bold transition-all duration-200 flex items-center space-x-2 border-b-2 text-slate-400 dark:text-cyan-400/60 border-transparent hover:text-slate-700 dark:hover:text-cyan-300";
+
+            if (tab === 'tv') {
+                wsTV.classList.remove('hidden');
+                wsManager.classList.add('hidden');
+                tabTV.className = activeStyle;
+                tabManager.className = inactiveStyle;
+            } else {
+                wsTV.classList.add('hidden');
+                wsManager.classList.remove('hidden');
+                tabManager.className = activeStyle;
+                tabTV.className = inactiveStyle;
+                
+                loadManagerWorkspaceData();
+            }
         }
 
         //neu tren url co truyen deviceId sau khi upload/delete tu dong gan vao o input
@@ -1004,6 +1174,210 @@
             }
         }
 
+        // ==========================================================
+        // LOGIC TAB QUẢN LÝ TÀI KHOẢN MANAGER
+        // ==========================================================
+        async function loadManagerWorkspaceData() {
+            try {
+                const res = await fetch('/api/managers');
+                const data = await res.json();
+                if (data.success && data.managers) {
+                    rawManagersData = data.managers;
+                    filterManagerList();
+                    if (rawManagersData.length > 0 && !activeManagerId) {
+                        selectManager(rawManagersData[0].id);
+                    }
+                }
+            } catch (err) {
+                console.error('Lỗi tải manager:', err);
+            }
+        }
+
+        function filterManagerList() {
+            const searchKey = document.getElementById('searchManagerInput').value.toLowerCase().trim();
+            const container = document.getElementById('managerSidebarListContainer');
+            container.innerHTML = '';
+
+            const filtered = rawManagersData.filter(m => m.username.toLowerCase().includes(searchKey));
+            document.getElementById('managerCountBadge').textContent = `${filtered.length} Manager`;
+
+            if (filtered.length === 0) {
+                container.innerHTML = '<p class="text-slate-400 dark:text-slate-300 text-xs italic text-center py-4">Không tìm thấy manager</p>';
+                return;
+            }
+
+            filtered.forEach(m => {
+                const isCurrent = m.id === activeManagerId;
+                const div = document.createElement('div');
+                div.className = isCurrent 
+                    ? 'p-3 rounded-xl bg-[#A3DC9A]/30 dark:bg-[#0F828C]/40 border border-[#A3DC9A] dark:border-cyan-400 flex justify-between items-center transition shadow-sm cursor-pointer' 
+                    : 'p-3 rounded-xl bg-slate-50 dark:bg-[#031118]/40 border border-slate-200 dark:border-[#0F828C]/20 hover:bg-slate-100 dark:hover:bg-[#0F828C]/20 flex justify-between items-center transition cursor-pointer';
+                
+                div.onclick = () => selectManager(m.id);
+                div.innerHTML = `
+                    <div>
+                        <strong class="text-slate-800 dark:text-white font-semibold text-sm">${m.username}</strong><br>
+                        <span class="text-[11px] text-slate-500 dark:text-cyan-300">Quản lý: ${m.allowedDevices ? m.allowedDevices.length : 0} thiết bị</span>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // Hàm chọn Manager ở cột trái để load lên cột phải
+        function selectManager(managerId) {
+            activeManagerId = managerId;
+            const manager = rawManagersData.find(m => m.id === managerId);
+            if (!manager) return;
+
+            filterManagerList();
+            document.getElementById('labelActiveManager').textContent = manager.username;
+            document.getElementById('selectedManagerId').value = manager.id;
+
+            document.getElementById('detailManagerPassword').value = '';
+
+            renderManagerDevicesCheckboxes(manager.allowedDevices || []);
+        }
+
+        // Chuyển đổi hiển thị ký tự (mật khẩu dạng chấm <-> chữ thường) cho ô mật khẩu mới
+        function togglePasswordVisibility() {
+            const pwdInput = document.getElementById('detailManagerPassword');
+            if (pwdInput.type === 'password') {
+                pwdInput.type = 'text';
+            } else {
+                pwdInput.type = 'password';
+            }
+        }
+
+        function renderManagerDevicesCheckboxes(allowedDevices) {
+            const container = document.getElementById('managerDevicesCheckboxContainer');
+            container.innerHTML = '';
+            const allDeviceKeys = Object.keys(rawDevicesData || {});
+
+            if (allDeviceKeys.length === 0) {
+                container.innerHTML = '<span class="text-xs text-slate-400 italic">Chưa có thiết bị TV nào</span>';
+                return;
+            }
+
+            allDeviceKeys.forEach(devId => {
+                const isChecked = allowedDevices.includes(devId);
+                const label = document.createElement('label');
+                label.className = 'flex items-center space-x-2 text-xs text-slate-700 dark:text-slate-200 cursor-pointer p-1 rounded hover:bg-slate-100 dark:hover:bg-cyan-950/40';
+                label.innerHTML = `
+                    <input type="checkbox" name="managerDeviceCheck" value="${devId}" ${isChecked ? 'checked' : ''} class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                    <span class="font-medium">${devId}</span>
+                `;
+                container.appendChild(label);
+            });
+        }
+
+        async function saveManagerChanges(event) {
+            event.preventDefault();
+            const managerId = document.getElementById('selectedManagerId').value;
+            const newPassword = document.getElementById('detailManagerPassword').value;
+            
+            // Lấy toàn bộ danh sách các thiết bị TV được check phân quyền
+            const checkedBoxes = document.querySelectorAll('input[name="managerDeviceCheck"]:checked');
+            const allowedDevices = Array.from(checkedBoxes).map(cb => cb.value);
+
+            try {
+                const res = await fetch('/api/manager/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ managerId, newPassword, allowedDevices })
+                });
+                const result = await res.json();
+
+                if (result.success) {
+                    alert('Cập nhật tài khoản manager và phân quyền thành công!');
+                    // Xoá ô nhập mật khẩu mới sau khi lưu thành công
+                    document.getElementById('detailManagerPassword').value = '';
+                    loadManagerWorkspaceData(); // Tải lại danh sách
+                } else {
+                    alert(result.message || 'Không thể cập nhật tài khoản');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Lỗi kết nối server khi lưu thay đổi');
+            }
+        }
+
+        async function deleteActiveManager() {
+            if (!activeManagerId) return;
+            if (!confirm('Xoá tài khoản manager này?')) return;
+            try {
+                const res = await fetch(`/api/managers/${activeManagerId}`, { method: 'DELETE' });
+                const result = await res.json();
+                if (result.success) {
+                    activeManagerId = null;
+                    loadManagerWorkspaceData();
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function openAddManagerModal() {
+            document.getElementById('addManagerModal').classList.remove('hidden');
+            // Render danh sách checkbox TV vào popup giống như ở cột phải
+            const container = document.getElementById('modalDevicesCheckboxContainer');
+            container.innerHTML = '';
+            const allDeviceKeys = Object.keys(rawDevicesData || {});
+
+            if (allDeviceKeys.length === 0) {
+                container.innerHTML = '<span class="text-xs text-slate-400 italic">Chưa có thiết bị TV nào</span>';
+                return;
+            }
+
+            allDeviceKeys.forEach(devId => {
+                const label = document.createElement('label');
+                label.className = 'flex items-center space-x-2 text-xs text-slate-700 dark:text-slate-200 cursor-pointer p-1 rounded hover:bg-slate-100 dark:hover:bg-cyan-950/40';
+                label.innerHTML = `
+                    <input type="checkbox" name="modalDeviceCheck" value="${devId}" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                    <span class="font-medium">${devId}</span>
+                `;
+                container.appendChild(label);
+            });
+        }
+
+        function closeAddManagerModal() {
+            document.getElementById('addManagerModal').classList.add('hidden');
+            document.getElementById('addManagerForm').reset();
+        }
+
+        function toggleModalPasswordVisibility() {
+            const pwdInput = document.getElementById('modalNewPassword');
+            pwdInput.type = pwdInput.type === 'password' ? 'text' : 'password';
+        }
+
+        async function submitNewManagerWithDevices(event) {
+            event.preventDefault();
+            const username = document.getElementById('modalNewUsername').value.trim();
+            const password = document.getElementById('modalNewPassword').value;
+            
+            const checkedBoxes = document.querySelectorAll('input[name="modalDeviceCheck"]:checked');
+            const allowedDevices = Array.from(checkedBoxes).map(cb => cb.value);
+
+            try {
+                const res = await fetch('/api/managers', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password, allowedDevices })
+                });
+                const result = await res.json();
+                if (result.success) {
+                    alert('Tạo manager thành công!');
+                    closeAddManagerModal();
+                    loadManagerWorkspaceData();
+                } else {
+                    alert(result.message || 'Lỗi tạo manager');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Lỗi kết nối server');
+            }
+        }
+
         // --- XỬ LÝ CHUYỂN ĐỔI THEME ---
         // Khởi tạo theme từ localStorage hoặc mặc định là dark
         const savedTheme = localStorage.getItem('theme') || 'dark';
@@ -1046,6 +1420,11 @@
                 formDeviceId.value = '';
                 labelDevice.textContent = 'Chưa có TV';
                 document.getElementById('playlistTableBody').innerHTML = '<tr><td colspan="6" class="py-6 text-center text-slate-400 italic">Hệ thống chưa có thiết bị nào</td></tr>';
+            }
+        
+            const savedTab = localStorage.getItem('activeWorkspaceTab');
+            if (savedTab === 'manager') {
+                switchMainWorkspace('manager');
             }
         });
     </script>    
